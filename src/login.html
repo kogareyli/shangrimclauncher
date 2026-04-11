@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShangriMc — Connexion</title>
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body>
+  <!-- Custom title bar -->
+  <div class="titlebar">
+    <div class="titlebar-drag"></div>
+    <div class="titlebar-controls">
+      <button class="ctrl-btn" id="btn-min" title="Réduire">─</button>
+      <button class="ctrl-btn red" id="btn-close" title="Fermer">✕</button>
+    </div>
+  </div>
+
+  <!-- Stars background -->
+  <canvas id="stars"></canvas>
+
+  <!-- Main layout -->
+  <div class="login-wrapper">
+    <!-- Left panel: branding -->
+    <div class="brand-panel">
+      <div class="brand-logo">
+        <img src="../logo.png" alt="ShangriMc" draggable="false" />
+      </div>
+      <h1 class="brand-name">ShangriMc</h1>
+      <p class="brand-tagline">Forge 1.20.1 · Serveur Moddé · Shangri-La Frontier</p>
+
+      <div class="server-badge">
+        <span class="server-dot" id="server-dot"></span>
+        <span id="server-status">Vérification du serveur…</span>
+      </div>
+    </div>
+
+    <!-- Right panel: login -->
+    <div class="login-panel">
+      <div class="login-card">
+        <h2>Bienvenue !</h2>
+        <p class="login-sub">Connecte-toi avec ton compte Microsoft pour rejoindre l'aventure.</p>
+
+        <div id="error-box" class="error-box hidden"></div>
+
+        <button class="ms-btn" id="btn-login">
+          <svg class="ms-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+            <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          Se connecter avec Microsoft
+        </button>
+
+        <div id="loading-state" class="loading-state hidden">
+          <div class="spinner"></div>
+          <span id="loading-text">Connexion en cours…</span>
+        </div>
+
+        <p class="login-note">
+          Pas de compte ?
+          <button class="link-btn" id="btn-create-account">Créer un compte Microsoft</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

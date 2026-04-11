@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+*.log
+.DS_Store
+Thumbs.db
+# Garde le dossier mods/ mais ignore les .jar dedans (trop lourds pour GitHub)
+mods/*.jar
+

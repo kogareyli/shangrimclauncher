@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShangriMc Launcher</title>
+  <link rel="stylesheet" href="css/home.css" />
+</head>
+<body>
+  <canvas id="stars"></canvas>
+  <canvas id="particles"></canvas>
+
+  <!-- Custom title bar -->
+  <div class="titlebar">
+    <div class="app-logo">
+      <img src="../logo.png" alt="ShangriMc" draggable="false" />
+    </div>
+    <span class="app-name">ShangriMc Launcher</span>
+    <div class="titlebar-drag"></div>
+    <div class="titlebar-controls">
+      <button class="ctrl-btn" id="btn-min">─</button>
+      <button class="ctrl-btn" id="btn-max">□</button>
+      <button class="ctrl-btn red" id="btn-close">✕</button>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <button class="nav-btn active" data-tab="home" title="Accueil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </button>
+      <button class="nav-btn" data-tab="mods" title="Mods">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </button>
+      <button class="nav-btn" data-tab="settings" title="Paramètres">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+
+      <div class="sidebar-spacer"></div>
+
+      <!-- Discord button -->
+      <button class="nav-btn discord-btn" id="btn-discord" title="Discord ShangriMc">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.04.033.052a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
+        </svg>
+      </button>
+
+      <!-- Profile at bottom -->
+      <div class="profile-btn" id="profile-btn" title="Profil">
+        <div class="profile-avatar" id="profile-avatar">?</div>
+      </div>
+    </nav>
+
+    <!-- Content area -->
+    <main class="content">
+
+      <!-- ═══ HOME TAB ═══ -->
+      <div class="tab-panel active" id="tab-home">
+        <!-- Hero area -->
+        <div class="hero">
+          <div class="hero-blocks" id="hero-blocks"></div>
+          <div class="hero-logo-wrap">
+            <img src="../logo.png" alt="ShangriMc" class="hero-logo" draggable="false" />
+            <div class="hero-logo-glow"></div>
+          </div>
+          <div class="hero-glow"></div>
+          <!-- Floating block decoration -->
+          <div class="floating-block" id="float-block"></div>
+        </div>
+
+        <!-- Bottom overlay with news + play -->
+        <div class="bottom-overlay">
+          <!-- News section -->
+          <div class="news-section">
+            <h3 class="section-title">Actualités</h3>
+            <div class="news-cards">
+              <div class="news-card">
+                <div class="news-thumb" style="background:linear-gradient(135deg,#7c3aed,#2563eb)">
+                  <span class="news-tag">NOUVEAU</span>
+                </div>
+                <div class="news-body">
+                  <h4>ShangriMc est ouvert !</h4>
+                  <p>Le serveur Forge 1.20.1 est disponible. Rejoins l'aventure sur vocalist-submission.gl.joinmc.link</p>
+                </div>
+              </div>
+              <div class="news-card">
+                <div class="news-thumb" style="background:linear-gradient(135deg,#0f766e,#0284c7)">
+                  <span class="news-tag">MODS</span>
+                </div>
+                <div class="news-body">
+                  <h4>70+ mods installés</h4>
+                  <p>Combat épique, nouveaux biomes, structures, musique d'ambiance et bien plus encore.</p>
+                </div>
+              </div>
+              <div class="news-card">
+                <div class="news-thumb" style="background:linear-gradient(135deg,#b45309,#dc2626)">
+                  <span class="news-tag">GUIDE</span>
+                </div>
+                <div class="news-body">
+                  <h4>Comment jouer ?</h4>
+                  <p>Installe le launcher, connecte-toi avec Microsoft et clique sur Jouer. C'est tout !</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Play section -->
+          <div class="play-section">
+            <div class="play-card">
+              <div class="play-header">
+                <div class="play-logo">
+                  <img src="../logo.png" alt="ShangriMc" style="width:32px;height:32px;object-fit:contain;border-radius:6px;" />
+                </div>
+                <div class="play-info">
+                  <span class="play-title">ShangriMc</span>
+                  <span class="play-sub" id="play-username">Chargement…</span>
+                </div>
+                <button class="play-chevron" id="btn-logout" title="Déconnexion">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+              </div>
+
+              <div class="version-badge">Forge 1.20.1 — 47.4.20</div>
+
+              <div class="progress-area hidden" id="progress-area">
+                <div class="progress-label" id="progress-label">Préparation…</div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+              </div>
+
+              <div class="log-area hidden" id="log-area">
+                <div class="log-scroll" id="log-scroll"></div>
+              </div>
+
+              <button class="play-btn" id="btn-play">
+                <span id="play-btn-text">▶ &nbsp;Jouer</span>
+              </button>
+
+              <div class="play-actions">
+                <button class="action-link" id="btn-folder">📁 Dossier jeu</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MODS TAB ═══ -->
+      <div class="tab-panel" id="tab-mods">
+        <div class="tab-content-inner">
+          <h2 class="tab-title">Mods installés</h2>
+          <p class="tab-desc">Pack complet ShangriMc — Forge 1.20.1</p>
+          <div class="mods-grid" id="mods-grid"></div>
+        </div>
+      </div>
+
+      <!-- ═══ SETTINGS TAB ═══ -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="tab-content-inner">
+          <h2 class="tab-title">Paramètres</h2>
+
+          <div class="settings-group">
+            <h3>Mémoire allouée</h3>
+            <div class="ram-selector" id="ram-selector">
+              <button class="ram-btn" data-val="2G">2 Go</button>
+              <button class="ram-btn active" data-val="4G">4 Go</button>
+              <button class="ram-btn" data-val="6G">6 Go</button>
+              <button class="ram-btn" data-val="8G">8 Go</button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Serveur</h3>
+            <div class="setting-row">
+              <span class="setting-label">IP du serveur</span>
+              <span class="setting-value">vocalist-submission.gl.joinmc.link</span>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Version Forge</span>
+              <span class="setting-value">1.20.1 — 47.4.20</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Mods — Synchronisation</h3>
+            <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5;">
+              Place tes mods dans le dossier <code style="background:var(--glass2);padding:2px 5px;border-radius:4px;">mods/</code> du launcher.
+              Clique sur Synchroniser pour les copier dans <code style="background:var(--glass2);padding:2px 5px;border-radius:4px;">.shangrimc/mods/</code>.
+            </p>
+            <div style="display:flex;gap:8px;">
+              <button class="primary-btn" id="btn-sync-mods" style="margin-top:0;">🔄 Synchroniser les mods</button>
+              <button class="primary-btn" id="btn-open-mods-dir" style="margin-top:0;background:rgba(37,99,235,0.12);border-color:rgba(37,99,235,0.4);color:#93c5fd;">📁 Dossier mods</button>
+            </div>
+            <div class="sync-result hidden" id="sync-result"></div>
+          </div>
+
+          <div class="settings-group">
+            <h3>Compte</h3>
+            <div class="setting-row">
+              <span class="setting-label">Utilisateur connecté</span>
+              <span class="setting-value" id="settings-username">—</span>
+            </div>
+            <button class="danger-btn" id="settings-logout">Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Profile dropdown -->
+  <div class="profile-dropdown hidden" id="profile-dropdown">
+    <div class="dropdown-user" id="dd-user">
+      <div class="dd-avatar" id="dd-avatar">?</div>
+      <div>
+        <div class="dd-name" id="dd-name">…</div>
+        <div class="dd-sub">Compte Minecraft</div>
+      </div>
+    </div>
+    <hr class="dd-sep" />
+    <button class="dd-btn" id="dd-logout">⏏ Se déconnecter</button>
+  </div>
+
+  <script src="js/home.js"></script>
+</body>
+</html>

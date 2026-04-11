@@ -1,0 +1,26 @@
+name: Build & Release ShangriMc Launcher
+
+on:
+  push:
+    tags:
+      - 'v*'   # Se déclenche quand tu push un tag genre v1.0.1
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build & Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run publish
