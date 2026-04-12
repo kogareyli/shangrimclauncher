@@ -5,124 +5,138 @@
   <title>Connexion Microsoft</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%; height: 100%;
-      overflow: hidden;
-      background: #080810;
+      width: 100%; height: 100%; overflow: hidden;
+      background: #07070f;
       font-family: 'Outfit', 'Segoe UI', sans-serif;
       color: #e8e8f4;
       user-select: none;
     }
 
-    /* ── Barre custom ── */
     .titlebar {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: 40px; z-index: 9999;
-      display: flex; align-items: center;
+      position: fixed; top: 0; left: 0; right: 0; height: 38px; z-index: 9999;
+      display: flex; align-items: center; gap: 8px; padding: 0 10px;
       background: #07070f;
-      border-bottom: 1px solid rgba(124,58,237,0.35);
-      -webkit-app-region: drag;
-      padding: 0 12px;
-    }
-
-    .tb-logo {
-      width: 20px; height: 20px; flex-shrink: 0;
-      -webkit-app-region: no-drag;
-    }
-    .tb-logo img {
-      width: 100%; height: 100%; object-fit: contain; border-radius: 4px;
-    }
-
-    .tb-title {
-      flex: 1; font-size: 13px; font-weight: 600;
-      color: #9090b0; padding-left: 10px;
+      border-bottom: 1px solid rgba(124,58,237,0.4);
       -webkit-app-region: drag;
     }
-    .tb-subtitle {
-      font-size: 11px; font-weight: 400; color: #555580;
-    }
-
-    .tb-controls {
-      display: flex; gap: 4px; -webkit-app-region: no-drag;
-    }
-
-    .ctrl-btn {
-      width: 30px; height: 24px; border: none; border-radius: 6px;
-      background: rgba(255,255,255,0.06); color: #9090b0;
-      font-size: 12px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+    .tb-logo { width: 20px; height: 20px; flex-shrink: 0; -webkit-app-region: no-drag; }
+    .tb-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 3px; }
+    .tb-title { flex: 1; font-size: 12px; font-weight: 600; color: #9090b0; -webkit-app-region: drag; }
+    .tb-sub { color: #44445a; font-weight: 400; }
+    .tb-controls { display: flex; gap: 3px; -webkit-app-region: no-drag; }
+    .ctrl {
+      width: 28px; height: 22px; border: none; border-radius: 5px;
+      background: rgba(255,255,255,0.06); color: #9090b0; font-size: 11px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
     }
-    .ctrl-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
-    .ctrl-btn.red:hover { background: #ef4444; color: #fff; }
+    .ctrl:hover { background: rgba(255,255,255,0.13); color: #fff; }
+    .ctrl.red:hover { background: #ef4444; color: #fff; }
 
-    /* ── Zone de chargement ── */
-    .loading-bar {
-      position: fixed; top: 40px; left: 0; right: 0; height: 2px; z-index: 9998;
-      background: rgba(255,255,255,0.05);
+    .prog-bar {
+      position: fixed; top: 38px; left: 0; right: 0; height: 2px; z-index: 9998;
+      background: rgba(255,255,255,0.04);
     }
-    .loading-fill {
+    .prog-fill {
       height: 100%;
-      background: linear-gradient(90deg, #7c3aed, #2563eb);
-      width: 0%;
-      transition: width 0.3s ease;
-      animation: loading-pulse 1.5s ease-in-out infinite;
+      background: linear-gradient(90deg, #7c3aed, #2563eb, #7c3aed);
+      background-size: 200% 100%;
+      width: 100%;
+      animation: shimmer 1.5s linear infinite;
+      transition: opacity 0.4s;
     }
-    @keyframes loading-pulse {
-      0%   { opacity: 1; }
-      50%  { opacity: 0.5; }
-      100% { opacity: 1; }
+    .prog-fill.done { opacity: 0; }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: 0% 0; }
+    }
+
+    webview {
+      position: fixed;
+      top: 40px; left: 0; right: 0; bottom: 0;
+      width: 100%; height: calc(100% - 40px);
+      border: none;
     }
   </style>
 </head>
 <body>
   <div class="titlebar">
-    <div class="tb-logo">
-      <img src="../logo.png" alt="ShangriMc" draggable="false" />
-    </div>
+    <div class="tb-logo"><img src="../logo.png" draggable="false" /></div>
     <div class="tb-title">
-      Connexion Microsoft
-      <span class="tb-subtitle"> — ShangriMc</span>
+      Connexion Microsoft <span class="tb-sub">— ShangriMc</span>
     </div>
     <div class="tb-controls">
-      <button class="ctrl-btn" id="btn-min" title="Réduire">
+      <button class="ctrl" id="btn-min" title="Réduire">
         <svg width="10" height="2" viewBox="0 0 10 2" fill="currentColor"><rect width="10" height="2" rx="1"/></svg>
       </button>
-      <button class="ctrl-btn red" id="btn-close" title="Fermer">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/></svg>
+      <button class="ctrl red" id="btn-close" title="Fermer">
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+        </svg>
       </button>
     </div>
   </div>
 
-  <div class="loading-bar">
-    <div class="loading-fill" id="loading-fill"></div>
-  </div>
+  <div class="prog-bar"><div class="prog-fill" id="prog"></div></div>
+
+  <!-- partition fresh = pas de session cachée -->
+  <webview id="ms-view" partition="fresh-msauth" allowpopups></webview>
 
   <script>
     const { ipcRenderer } = require('electron');
+    const view = document.getElementById('ms-view');
+    const prog = document.getElementById('prog');
 
-    document.getElementById('btn-min').addEventListener('click', () => {
-      ipcRenderer.send('auth-minimize');
+    document.getElementById('btn-min').onclick   = () => ipcRenderer.send('auth-minimize');
+    document.getElementById('btn-close').onclick = () => ipcRenderer.send('auth-close');
+
+    // Patterns de redirect à intercepter (toutes les URIs enregistrées dans Azure)
+    const REDIRECT_PATTERNS = [
+      'https://login.microsoftonline.com/common/oauth2/nativeclient',
+      'http://localhost:3000/callback',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000/callback',
+      'http://127.0.0.1:3000',
+    ];
+
+    let handled = false; // évite les envois en double si plusieurs événements se déclenchent
+
+    function isRedirectUrl(url) {
+      if (!url) return false;
+      return REDIRECT_PATTERNS.some(p => url.startsWith(p));
+    }
+
+    function handleUrl(url) {
+      if (!isRedirectUrl(url)) return false;
+      if (handled) return true;
+      handled = true;
+      ipcRenderer.send('auth-code-received', url);
+      return true;
+    }
+
+    ipcRenderer.on('load-auth-url', (_, url) => {
+      view.src = url;
     });
-    document.getElementById('btn-close').addEventListener('click', () => {
-      ipcRenderer.send('auth-close');
-    });
 
-    // Animation de chargement
-    const fill = document.getElementById('loading-fill');
-    let pct = 0;
-    const interval = setInterval(() => {
-      pct = Math.min(pct + Math.random() * 15, 90);
-      fill.style.width = pct + '%';
-    }, 200);
+    // Tous les événements de navigation possibles
+    view.addEventListener('will-navigate',         e => handleUrl(e.url));
+    view.addEventListener('did-navigate',          e => handleUrl(e.url));
+    view.addEventListener('did-navigate-in-page',  e => handleUrl(e.url));
+    view.addEventListener('did-start-navigation',  e => { if (e.url) handleUrl(e.url); });
 
-    ipcRenderer.on('page-loaded', () => {
-      clearInterval(interval);
-      fill.style.width = '100%';
-      setTimeout(() => { fill.style.opacity = '0'; }, 400);
+    // Chargement
+    view.addEventListener('did-finish-load',  () => prog.classList.add('done'));
+    view.addEventListener('did-start-loading',() => prog.classList.remove('done'));
+
+    // Erreur de navigation (ex: ERR_CONNECTION_REFUSED sur localhost:3000)
+    // → le code est quand même dans l'URL !
+    view.addEventListener('did-fail-load', (e) => {
+      if (e.validatedURL && isRedirectUrl(e.validatedURL)) {
+        handleUrl(e.validatedURL);
+      }
     });
   </script>
 </body>

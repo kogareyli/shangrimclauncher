@@ -1,13 +1,20 @@
-const { app, BrowserWindow, ipcMain, session, Menu, dialog } = require('electron');
+const { app, BrowserWindow, BrowserView, ipcMain, session, Menu, dialog } = require('electron');
 const path = require('path');
 const os   = require('os');
 const fs   = require('fs');
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const CLIENT_ID    = 'ea74bb57-e149-43fb-8ed2-712e60652724';
-// URI native Microsoft — à enregistrer dans Azure Portal → Authentication → Mobile and desktop apps
+// URI native Microsoft — enregistrées dans Azure Portal → Authentication → Mobile and desktop apps
+// On utilise la nativeclient par défaut ; les URIs localhost sont interceptées dynamiquement
 const REDIRECT_URI = 'https://login.microsoftonline.com/common/oauth2/nativeclient';
-const SCOPE        = 'XboxLive.signin offline_access';
+const REDIRECT_LOCALHOST_PATTERNS = [
+  { prefix: 'http://localhost:3000/callback',    uri: 'http://localhost:3000/callback' },
+  { prefix: 'http://localhost:3000',             uri: 'http://localhost:3000' },
+  { prefix: 'http://127.0.0.1:3000/callback',   uri: 'http://127.0.0.1:3000/callback' },
+  { prefix: 'http://127.0.0.1:3000',            uri: 'http://127.0.0.1:3000' },
+];
+const SCOPE        = 'XboxLive.signin offline_access openid profile';
 const SERVER_HOST   = 'vocalist-submission.gl.joinmc.link';
 const GAME_DIR      = path.join(os.homedir(), 'AppData', 'Roaming', '.shangrimc');
 
@@ -118,117 +125,88 @@ ipcMain.handle('get-auth', async () => {
   return s.get('auth') || null;
 });
 
-// ─── Auth: Microsoft OAuth — fenêtre custom + BrowserView ─────────────────
+// ─── Auth: Microsoft OAuth — webview tag (fiable, page MS réelle) ──────────
 ipcMain.handle('microsoft-login', async () => {
   return new Promise((resolve, reject) => {
     let authWin = null;
-    let view    = null;
     let settled = false;
 
-    const TITLEBAR_H = 40; // hauteur de la barre custom
+    function cleanup() {
+      try { ipcMain.removeAllListeners('auth-minimize'); } catch (_) {}
+      try { ipcMain.removeAllListeners('auth-close'); } catch (_) {}
+      try { ipcMain.removeAllListeners('auth-code-received'); } catch (_) {}
+    }
 
     function done(err, profile) {
       if (settled) return;
       settled = true;
-      try {
-        ipcMain.removeAllListeners('auth-minimize');
-        ipcMain.removeAllListeners('auth-close');
-        if (view && authWin && !authWin.isDestroyed()) authWin.removeBrowserView(view);
-        if (authWin && !authWin.isDestroyed()) authWin.destroy();
-      } catch (_) {}
+      cleanup();
+      if (authWin && !authWin.isDestroyed()) authWin.destroy();
       if (err) reject(err);
       else     resolve(profile);
     }
 
-    async function handleRedirectUrl(url) {
-      if (!url.startsWith('https://login.microsoftonline.com/common/oauth2/nativeclient')) return false;
-      const urlObj = new URL(url);
-      const code   = urlObj.searchParams.get('code');
-      const error  = urlObj.searchParams.get('error_description') || urlObj.searchParams.get('error');
-      if (error)  { done(new Error(error)); return true; }
-      if (!code)  { done(new Error("Code d'autorisation manquant.")); return true; }
-      try {
-        const profile = await fullAuthChain(code);
-        const s = await getStore();
-        s.set('auth', profile);
-        done(null, profile);
-      } catch (e) { done(e); }
-      return true;
-    }
+    // Détermine la meilleure redirect_uri à utiliser (préfère nativeclient, fonctionne sans serveur)
+    const activeRedirectUri = REDIRECT_URI; // nativeclient par défaut
 
     const authURL = [
       'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
       `?client_id=${CLIENT_ID}`,
       `&response_type=code`,
-      `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`,
+      `&redirect_uri=${encodeURIComponent(activeRedirectUri)}`,
       `&scope=${encodeURIComponent(SCOPE)}`,
       `&prompt=select_account`,
       `&response_mode=query`,
     ].join('');
 
-    // ── Fenêtre wrapper (frame: false, avec notre barre custom) ──
+    // Fenêtre avec webview tag activé
     authWin = new BrowserWindow({
-      width:  500,
-      height: 680,
-      frame:  false,
+      width:     500,
+      height:    680,
+      frame:     false,
       resizable: false,
       parent:    mainWindow,
       modal:     true,
       show:      false,
       backgroundColor: '#07070f',
       webPreferences: {
-        nodeIntegration:  true,   // pour le preload de auth-popup.html
+        nodeIntegration:  true,
         contextIsolation: false,
+        webviewTag:       true,   // ← active le tag <webview>
       },
     });
     authWin.setMenu(null);
     authWin.loadFile(path.join(__dirname, 'src', 'auth-popup.html'));
 
-    // ── Boutons de la barre custom (IPC depuis auth-popup.html) ──
+    // Boutons barre custom
     ipcMain.on('auth-minimize', () => authWin?.minimize());
     ipcMain.on('auth-close',   () => done(new Error('Connexion annulée.')));
 
+    // Reçoit l'URL de redirect interceptée par le webview
+    ipcMain.on('auth-code-received', async (_, url) => {
+      try {
+        const urlObj = new URL(url);
+        const code   = urlObj.searchParams.get('code');
+        const error  = urlObj.searchParams.get('error_description') || urlObj.searchParams.get('error');
+        if (error)  return done(new Error(error));
+        if (!code)  return done(new Error("Code d'autorisation manquant."));
+
+        // Détermine quelle redirect_uri a été utilisée pour faire correspondre l'échange de token
+        let usedRedirectUri = activeRedirectUri;
+        for (const { prefix, uri } of REDIRECT_LOCALHOST_PATTERNS) {
+          if (url.startsWith(prefix)) { usedRedirectUri = uri; break; }
+        }
+
+        const profile = await fullAuthChain(code, usedRedirectUri);
+        const s = await getStore();
+        s.set('auth', profile);
+        done(null, profile);
+      } catch (e) { done(e); }
+    });
+
+    // Envoie l'URL au renderer une fois la page chargée
     authWin.webContents.once('did-finish-load', () => {
-      // ── BrowserView qui charge la vraie page Microsoft ──
-      view = new BrowserView({
-        webPreferences: {
-          nodeIntegration:  false,
-          contextIsolation: true,
-          webSecurity:      true,
-          partition:        'persist:msauth', // session dédiée auth
-        },
-      });
-      authWin.addBrowserView(view);
-
-      const { width, height } = authWin.getBounds();
-      view.setBounds({ x: 0, y: TITLEBAR_H, width, height: height - TITLEBAR_H });
-      view.setAutoResize({ width: true, height: true });
-
-      // Intercepte le redirect nativeclient sur le BrowserView
-      view.webContents.on('will-redirect', async (event, url) => {
-        if (await handleRedirectUrl(url)) event.preventDefault();
-      });
-      view.webContents.on('will-navigate', async (event, url) => {
-        if (url.startsWith('https://login.microsoftonline.com/common/oauth2/nativeclient')) {
-          event.preventDefault();
-          await handleRedirectUrl(url);
-        }
-      });
-      // Fallback via webRequest sur la session du BrowserView
-      view.webContents.session.webRequest.onBeforeRequest(
-        { urls: ['https://login.microsoftonline.com/common/oauth2/nativeclient*'] },
-        async (details, callback) => {
-          callback({ cancel: true });
-          await handleRedirectUrl(details.url);
-        }
-      );
-
-      // Informe la barre que la page est chargée
-      view.webContents.on('did-finish-load', () => {
-        authWin?.webContents.send('page-loaded');
-      });
-
-      view.webContents.loadURL(authURL);
+      authWin.webContents.send('load-auth-url', authURL);
       authWin.show();
     });
 
@@ -239,7 +217,7 @@ ipcMain.handle('microsoft-login', async () => {
 });
 
 // ─── Full Microsoft → Xbox → XSTS → Minecraft chain ──────────────────────
-async function fullAuthChain(code) {
+async function fullAuthChain(code, redirectUri = REDIRECT_URI) {
   const nodeFetch = await import('node-fetch');
   const fetch = nodeFetch.default;
 
@@ -251,7 +229,7 @@ async function fullAuthChain(code) {
       client_id:    CLIENT_ID,
       code,
       grant_type:   'authorization_code',
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       scope:        SCOPE,
     }).toString(),
   });
@@ -427,6 +405,52 @@ ipcMain.handle('check-forge', async () => {
 ipcMain.handle('open-external', async (_, url) => {
   const { shell } = require('electron');
   await shell.openExternal(url);
+});
+
+// ─── Téléchargement mods depuis GitHub releases ────────────────────────────
+// Place un fichier mods-manifest.json dans ton repo GitHub avec la liste des mods
+// Format: { "version": "1.0.0", "mods": [{ "name": "mod.jar", "url": "...", "size": 12345 }] }
+const MODS_MANIFEST_URL = 'https://raw.githubusercontent.com/kogareyli/shangrimclauncher/main/mods-manifest.json';
+
+ipcMain.handle('check-mods-update', async (event) => {
+  try {
+    const nodeFetch = await import('node-fetch');
+    const fetch = nodeFetch.default;
+
+    // Récupère le manifest distant
+    const res = await fetch(MODS_MANIFEST_URL, { timeout: 5000 });
+    if (!res.ok) return { upToDate: true, message: 'Manifest non trouvable, passage en local.' };
+
+    const manifest = await res.json();
+    const gameModsDir = path.join(GAME_DIR, 'mods');
+    ensureGameDirStructure();
+
+    const localMods  = fs.existsSync(gameModsDir)
+      ? fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar'))
+      : [];
+
+    const missing = manifest.mods.filter(m => !localMods.includes(m.name));
+    if (missing.length === 0) return { upToDate: true, total: manifest.mods.length };
+
+    // Télécharge les mods manquants
+    let downloaded = 0;
+    for (const mod of missing) {
+      event.sender.send('mod-download-progress', {
+        name: mod.name,
+        current: downloaded,
+        total: missing.length,
+      });
+      const modRes = await fetch(mod.url);
+      if (!modRes.ok) continue;
+      const buffer = await modRes.buffer();
+      fs.writeFileSync(path.join(gameModsDir, mod.name), buffer);
+      downloaded++;
+    }
+
+    return { upToDate: false, downloaded, total: missing.length };
+  } catch (e) {
+    return { upToDate: true, error: e.message };
+  }
 });
 
 // ─── Game directory structure setup ────────────────────────────────────────
