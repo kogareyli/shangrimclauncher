@@ -105,32 +105,77 @@ setTimeout(() => {
 }, 1200);
 
 // ── Login flow ────────────────────────────────────────────────────────────
-const btnLogin  = document.getElementById('btn-login');
-const errBox    = document.getElementById('error-box');
-const loadState = document.getElementById('loading-state');
-const loadText  = document.getElementById('loading-text');
+const btnLogin       = document.getElementById('btn-login');
+const errBox         = document.getElementById('error-box');
+const loadState      = document.getElementById('loading-state');
+const loadText       = document.getElementById('loading-text');
+const deviceScreen   = document.getElementById('device-code-screen');
+const deviceCodeVal  = document.getElementById('device-code-value');
+const deviceTimer    = document.getElementById('device-code-timer');
+const btnCopyCode    = document.getElementById('btn-copy-code');
+
+let timerInterval = null;
 
 function showError(msg) {
   errBox.textContent = msg;
   errBox.classList.remove('hidden');
   btnLogin.disabled = false;
   loadState.classList.add('hidden');
+  deviceScreen.classList.add('hidden');
   btnLogin.classList.remove('hidden');
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 }
 
 function setLoading(msg) {
   loadText.textContent = msg;
   loadState.classList.remove('hidden');
   btnLogin.classList.add('hidden');
+  deviceScreen.classList.add('hidden');
   errBox.classList.add('hidden');
 }
 
+function showDeviceCode(code, expiresIn) {
+  deviceCodeVal.textContent = code;
+  loadState.classList.add('hidden');
+  deviceScreen.classList.remove('hidden');
+
+  // Countdown timer
+  let remaining = expiresIn || 900;
+  function updateTimer() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    deviceTimer.textContent = `Code valide encore ${m}:${String(s).padStart(2, '0')}`;
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      deviceTimer.textContent = 'Code expiré — relance la connexion.';
+    }
+    remaining--;
+  }
+  updateTimer();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+}
+
+// Copier le code
+btnCopyCode.addEventListener('click', () => {
+  navigator.clipboard.writeText(deviceCodeVal.textContent).catch(() => {});
+  btnCopyCode.textContent = '✓';
+  setTimeout(() => { btnCopyCode.textContent = '⎘'; }, 1500);
+});
+
+// Écoute le code envoyé par main.js
+api.onMsaCode((data) => {
+  showDeviceCode(data.user_code, data.expires_in);
+});
+
 btnLogin.addEventListener('click', async () => {
   btnLogin.disabled = true;
-  setLoading('Ouverture de la fenêtre Microsoft…');
+  setLoading('Préparation de la connexion…');
 
   try {
     const auth = await api.microsoftLogin();
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    deviceScreen.classList.add('hidden');
     setLoading(`Bienvenue, ${auth.name} ! Chargement…`);
     await new Promise(r => setTimeout(r, 900));
     await api.goHome();

@@ -58,6 +58,21 @@
           <span id="loading-text">Connexion en cours…</span>
         </div>
 
+        <!-- Écran device code (affiché quand Microsoft envoie le code) -->
+        <div id="device-code-screen" class="device-code-screen hidden">
+          <div class="device-code-label">Entre ce code sur&nbsp;<strong>microsoft.com/link</strong></div>
+          <div class="device-code-box">
+            <span id="device-code-value">····-····</span>
+            <button class="copy-code-btn" id="btn-copy-code" title="Copier">⎘</button>
+          </div>
+          <div class="device-code-hint">Le navigateur s'est ouvert automatiquement.<br>Connecte-toi, puis reviens ici.</div>
+          <div class="device-code-wait">
+            <div class="spinner-small"></div>
+            En attente de ta connexion…
+          </div>
+          <div id="device-code-timer" class="device-code-timer"></div>
+        </div>
+
         <p class="login-note">
           Pas de compte ?
           <button class="link-btn" id="btn-create-account">Créer un compte Microsoft</button>

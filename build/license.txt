@@ -1,0 +1,10 @@
+ShangriMc Launcher — Licence d'utilisation
+==========================================
+
+Ce logiciel est propriété de ShangriMc.
+Utilisation réservée aux membres du serveur ShangriMc.
+
+Discord : discord.gg/EMhW5VTqsW
+GitHub  : github.com/kogareyli/shangrimclauncher
+
+En installant ce launcher, vous acceptez les conditions d'utilisation du serveur ShangriMc.

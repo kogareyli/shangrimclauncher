@@ -6,63 +6,60 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
     "publish": "electron-builder --win --x64 --publish always"
   },
   "build": {
     "appId": "com.shangrimc.launcher",
     "productName": "ShangriMc Launcher",
+    "copyright": "Copyright © 2025 ShangriMc",
     "publish": {
       "provider": "github",
-      "owner": "eddyzaz38",
+      "owner": "kogareyli",
       "repo": "shangrimclauncher",
       "private": false
     },
     "win": {
       "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "icon": "assets/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage"
+      "icon": "assets/icon.ico",
+      "artifactName": "ShangriMc-Launcher-Setup-${version}.exe"
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
+      "installerSidebar": "assets/installerSidebar.bmp",
+      "installerHeader": "assets/installerHeader.bmp",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "ShangriMc Launcher"
+      "shortcutName": "ShangriMc Launcher",
+      "include": "build/installer.nsh",
+      "license": "build/license.txt",
+      "installerLanguages": ["French"],
+      "language": "1036"
     },
     "files": [
-      "**/*",
-      "mods/**",
-      "!node_modules/.cache",
-      "!.git"
+      "**/*", "assets/**", "mods/**", "src/**", "build/**",
+      "!node_modules/.cache", "!.git", "!dist", "!*.bat"
     ],
     "extraResources": [
-      {
-        "from": "forge-1.20.1-47.4.18-installer.jar",
-        "to": "forge-1.20.1-47.4.18-installer.jar"
-      }
-    ]
+      { "from": "forge-1.20.1-47.4.18-installer.jar", "to": "forge-1.20.1-47.4.18-installer.jar" },
+      { "from": "logo.png", "to": "logo.png" }
+    ],
+    "directories": { "output": "dist", "buildResources": "assets" }
   },
   "dependencies": {
-    "minecraft-launcher-core": "^3.16.3",
+    "adm-zip": "^0.5.10",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.3.9",
+    "minecraft-launcher-core": "^3.16.3",
     "node-fetch": "^2.7.0",
-    "uuid": "^9.0.1",
-    "adm-zip": "^0.5.10"
+    "prismarine-auth": "^2.5.1"
   },
   "devDependencies": {
-    "electron": "^29.1.0",
+    "electron": "^29.0.0",
     "electron-builder": "^24.13.3"
   }
 }
