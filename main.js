@@ -5,16 +5,17 @@ const fs   = require('fs');
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const CLIENT_ID    = 'ea74bb57-e149-43fb-8ed2-712e60652724';
-// URI native Microsoft — enregistrées dans Azure Portal → Authentication → Mobile and desktop apps
-// On utilise la nativeclient par défaut ; les URIs localhost sont interceptées dynamiquement
-const REDIRECT_URI = 'https://login.microsoftonline.com/common/oauth2/nativeclient';
+// Flux Live Connect — spécifiquement conçu pour Xbox/MSA, plus fiable pour Minecraft
+const REDIRECT_URI  = 'https://login.live.com/oauth20_desktop.srf';
+const AUTH_ENDPOINT = 'https://login.live.com/oauth20_authorize.srf';
+const TOKEN_ENDPOINT= 'https://login.live.com/oauth20_token.srf';
 const REDIRECT_LOCALHOST_PATTERNS = [
   { prefix: 'http://localhost:3000/callback',    uri: 'http://localhost:3000/callback' },
   { prefix: 'http://localhost:3000',             uri: 'http://localhost:3000' },
   { prefix: 'http://127.0.0.1:3000/callback',   uri: 'http://127.0.0.1:3000/callback' },
   { prefix: 'http://127.0.0.1:3000',            uri: 'http://127.0.0.1:3000' },
 ];
-const SCOPE        = 'XboxLive.signin offline_access openid profile';
+const SCOPE        = 'XboxLive.signin offline_access';
 const SERVER_HOST   = 'vocalist-submission.gl.joinmc.link';
 const GAME_DIR      = path.join(os.homedir(), 'AppData', 'Roaming', '.shangrimc');
 
@@ -150,13 +151,12 @@ ipcMain.handle('microsoft-login', async () => {
     const activeRedirectUri = REDIRECT_URI; // nativeclient par défaut
 
     const authURL = [
-      'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize',
+      AUTH_ENDPOINT,
       `?client_id=${CLIENT_ID}`,
       `&response_type=code`,
       `&redirect_uri=${encodeURIComponent(activeRedirectUri)}`,
       `&scope=${encodeURIComponent(SCOPE)}`,
       `&prompt=select_account`,
-      `&response_mode=query`,
     ].join('');
 
     // Fenêtre avec webview tag activé
@@ -192,9 +192,13 @@ ipcMain.handle('microsoft-login', async () => {
         if (!code)  return done(new Error("Code d'autorisation manquant."));
 
         // Détermine quelle redirect_uri a été utilisée pour faire correspondre l'échange de token
-        let usedRedirectUri = activeRedirectUri;
+        let usedRedirectUri = activeRedirectUri; // oauth20_desktop.srf par défaut
         for (const { prefix, uri } of REDIRECT_LOCALHOST_PATTERNS) {
           if (url.startsWith(prefix)) { usedRedirectUri = uri; break; }
+        }
+        // Si Microsoft a redirigé vers nativeclient, utilise nativeclient
+        if (url.startsWith('https://login.microsoftonline.com/common/oauth2/nativeclient')) {
+          usedRedirectUri = 'https://login.microsoftonline.com/common/oauth2/nativeclient';
         }
 
         const profile = await fullAuthChain(code, usedRedirectUri);
@@ -222,7 +226,7 @@ async function fullAuthChain(code, redirectUri = REDIRECT_URI) {
   const fetch = nodeFetch.default;
 
   // 1. MS token
-  const msTokenRes = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/token', {
+  const msTokenRes = await fetch(TOKEN_ENDPOINT, {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:    new URLSearchParams({
