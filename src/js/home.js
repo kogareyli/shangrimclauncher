@@ -427,3 +427,24 @@ btnPlay.addEventListener('click', async () => {
   const check = await api.checkInstalled();
   await setInstallMode(check.state);
 })();
+
+// ── Bannière de mise à jour launcher ─────────────────────────────────────
+api.onUpdateAvailable((version) => {
+  const banner = document.getElementById('update-banner');
+  const text   = document.getElementById('update-banner-text');
+  const btn    = document.getElementById('btn-restart-update');
+  text.textContent    = `🔄 Mise à jour v${version} disponible — téléchargement en cours…`;
+  btn.style.display   = 'none';
+  banner.classList.remove('hidden');
+});
+
+api.onUpdateDownloaded(() => {
+  const text = document.getElementById('update-banner-text');
+  const btn  = document.getElementById('btn-restart-update');
+  text.textContent  = '✅ Mise à jour prête — clique sur Redémarrer pour l\'installer';
+  btn.style.display = '';
+});
+
+document.getElementById('btn-restart-update').addEventListener('click', () => {
+  api.restartAndUpdate();
+});

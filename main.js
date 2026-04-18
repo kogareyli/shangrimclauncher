@@ -85,13 +85,7 @@ function setupAutoUpdater() {
       mainWindow?.webContents.send('update-available', info.version);
     });
     autoUpdater.on('update-downloaded', () => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        dialog.showMessageBox(mainWindow, {
-          type: 'info', title: 'Mise à jour disponible',
-          message: 'Une nouvelle version a été téléchargée.\nElle sera installée au prochain redémarrage.',
-          buttons: ['Redémarrer maintenant', 'Plus tard'],
-        }).then(({ response }) => { if (response === 0) autoUpdater.quitAndInstall(); });
-      }
+      mainWindow?.webContents.send('update-downloaded');
     });
     autoUpdater.on('error', () => {});
     if (app.isPackaged) setTimeout(() => autoUpdater.checkForUpdates(), 3000);
@@ -469,6 +463,14 @@ ipcMain.handle('logout', async () => {
   const oldWin = mainWindow;
   mainWindow = createWindow('login.html', { width: 860, height: 560, minWidth: 700, minHeight: 500 });
   if (oldWin && !oldWin.isDestroyed()) oldWin.close();
+});
+
+// ─── Restart & install update ─────────────────────────────────────────────────
+ipcMain.on('restart-and-update', () => {
+  try {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.quitAndInstall();
+  } catch (_) {}
 });
 
 // ─── Discord RPC ──────────────────────────────────────────────────────────────

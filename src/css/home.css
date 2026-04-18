@@ -541,3 +541,32 @@ html, body {
   background: linear-gradient(135deg, #f59e0b, #f97316);
   box-shadow: 0 4px 32px rgba(217,119,6,0.6);
 }
+
+/* ── Bannière mise à jour ────────────────────────────────────────────────── */
+.update-banner {
+  position: fixed;
+  top: 36px; left: 0; right: 0;
+  z-index: 999;
+  background: linear-gradient(90deg, #7c3aed, #2563eb);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.update-banner-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.update-banner-btn:hover { background: rgba(255,255,255,0.35); }

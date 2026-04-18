@@ -36,9 +36,12 @@ contextBridge.exposeInMainWorld('shangrimc', {
   onMsaCode: (cb) => ipcRenderer.on('msa-code', (_, v) => cb(v)),
 
   // Listeners
-  onLaunchLog:      (cb) => ipcRenderer.on('launch-log',      (_, v) => cb(v)),
-  onLaunchProgress: (cb) => ipcRenderer.on('launch-progress', (_, v) => cb(v)),
-  onLaunchStarted:  (cb) => ipcRenderer.on('launch-started',  (_)    => cb()),
-  onLaunchClosed:   (cb) => ipcRenderer.on('launch-closed',   (_, v) => cb(v)),
-  onLaunchError:    (cb) => ipcRenderer.on('launch-error',    (_, v) => cb(v)),
+  onLaunchLog:        (cb) => ipcRenderer.on('launch-log',        (_, v) => cb(v)),
+  onLaunchProgress:   (cb) => ipcRenderer.on('launch-progress',   (_, v) => cb(v)),
+  onLaunchStarted:    (cb) => ipcRenderer.on('launch-started',    (_)    => cb()),
+  onLaunchClosed:     (cb) => ipcRenderer.on('launch-closed',     (_, v) => cb(v)),
+  onLaunchError:      (cb) => ipcRenderer.on('launch-error',      (_, v) => cb(v)),
+  onUpdateAvailable:  (cb) => ipcRenderer.on('update-available',  (_, v) => cb(v)),
+  onUpdateDownloaded: (cb) => ipcRenderer.on('update-downloaded', (_)    => cb()),
+  restartAndUpdate:   ()   => ipcRenderer.send('restart-and-update'),
 });
