@@ -1,6 +1,6 @@
 {
   "name": "shangrimc-launcher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "ShangriMc Official Launcher - Forge 1.20.1",
   "main": "main.js",
   "scripts": {
@@ -19,7 +19,14 @@
       "private": false
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icon.ico",
       "artifactName": "ShangriMc-Launcher-Setup-${version}.exe"
     },
@@ -47,8 +54,14 @@
       "!forge-*.jar"
     ],
     "extraResources": [
-      { "from": "forge-1.20.1-47.4.18-installer.jar", "to": "forge-1.20.1-47.4.18-installer.jar" },
-      { "from": "assets/icon.ico", "to": "assets/icon.ico" }
+      {
+        "from": "forge-1.20.1-47.4.18-installer.jar",
+        "to": "forge-1.20.1-47.4.18-installer.jar"
+      },
+      {
+        "from": "assets/icon.ico",
+        "to": "assets/icon.ico"
+      }
     ],
     "directories": {
       "output": "dist",
