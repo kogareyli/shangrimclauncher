@@ -1,6 +1,6 @@
 {
   "name": "shangrimc-launcher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ShangriMc Official Launcher — Forge 1.20.1",
   "main": "main.js",
   "scripts": {
@@ -30,30 +30,24 @@
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
-      "installerSidebar": "assets/installerSidebar.bmp",
-      "installerHeader": "assets/installerHeader.bmp",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ShangriMc Launcher",
-      "include": "build/installer.nsh",
-      "license": "build/license.txt",
-      "installerLanguages": ["French"],
       "language": "1036"
     },
     "files": [
       "**/*",
       "assets/**",
-      "mods/**",
       "src/**",
-      "build/**",
       "!node_modules/.cache",
       "!.git",
       "!dist",
-      "!*.bat"
+      "!*.bat",
+      "!build"
     ],
     "extraResources": [
       { "from": "forge-1.20.1-47.4.18-installer.jar", "to": "forge-1.20.1-47.4.18-installer.jar" },
-      { "from": "logo.png", "to": "logo.png" }
+      { "from": "assets/icon.ico", "to": "assets/icon.ico" }
     ],
     "directories": {
       "output": "dist",

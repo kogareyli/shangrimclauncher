@@ -22,12 +22,12 @@ contextBridge.exposeInMainWorld('shangrimc', {
   openGameDir:  ()     => ipcRenderer.invoke('open-game-dir'),
   openExternal: (url)  => ipcRenderer.invoke('open-external', url),
 
-  // Mods sync local
-  syncMods:      ()    => ipcRenderer.invoke('sync-mods'),
-  openModsDir:   ()    => ipcRenderer.invoke('open-mods-dir'),
-  // Mods update depuis GitHub
-  checkModsUpdate: ()  => ipcRenderer.invoke('check-mods-update'),
-  onModDownloadProgress: (cb) => ipcRenderer.on('mod-download-progress', (_, v) => cb(v)),
+  // Installation
+  installAll:       ()  => ipcRenderer.invoke('install-all'),
+  checkInstalled:   ()  => ipcRenderer.invoke('check-installed'),
+  getInstalledMods: ()  => ipcRenderer.invoke('get-installed-mods'),
+  openModsDir:      ()  => ipcRenderer.invoke('open-mods-dir'),
+  onInstallProgress: (cb) => ipcRenderer.on('install-progress', (_, v) => cb(v)),
 
   // Discord RPC
   startDiscordRPC: () => ipcRenderer.invoke('start-discord-rpc'),

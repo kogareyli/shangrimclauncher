@@ -165,12 +165,11 @@ let launched = false;
 // ── Animated block hero (SUNRISE-style) ───────────────────────────────────
 (function initHero() {
   const container = document.getElementById('hero-blocks');
-  // Colors inspired by Shangri-la Frontier: blues, purples, teals, with some warm accents
   const PALETTES = [
-    ['#1a2a5e','#1e3a8a','#1d4ed8','#2563eb','#3b82f6','#60a5fa'],  // blues
-    ['#4c1d95','#5b21b6','#6d28d9','#7c3aed','#8b5cf6','#a78bfa'],  // purples
-    ['#134e4a','#115e59','#0f766e','#0d9488','#14b8a6','#2dd4bf'],  // teals
-    ['#1e1b4b','#312e81','#3730a3','#4338ca','#4f46e5','#6366f1'],  // indigos
+    ['#1a2a5e','#1e3a8a','#1d4ed8','#2563eb','#3b82f6','#60a5fa'],
+    ['#4c1d95','#5b21b6','#6d28d9','#7c3aed','#8b5cf6','#a78bfa'],
+    ['#134e4a','#115e59','#0f766e','#0d9488','#14b8a6','#2dd4bf'],
+    ['#1e1b4b','#312e81','#3730a3','#4338ca','#4f46e5','#6366f1'],
   ];
 
   const cols = 22, rows = 13;
@@ -191,7 +190,6 @@ let launched = false;
     }
   }
 
-  // Wave animation — creates a travelling wave across the grid
   let tick = 0;
   function waveAnimate() {
     tick += 0.015;
@@ -206,7 +204,6 @@ let launched = false;
   }
   waveAnimate();
 
-  // Random color flicker
   function randomFlicker() {
     const idx = Math.floor(Math.random() * blocks.length);
     const b   = blocks[idx];
@@ -218,18 +215,6 @@ let launched = false;
   randomFlicker();
 })();
 
-// ── Floating block decoration ─────────────────────────────────────────────
-(function initFloatBlock() {
-  const el = document.getElementById('float-block');
-  // Draw a small pixelated Minecraft-style cube using CSS
-  el.innerHTML = `
-    <div class="mc-cube">
-      <div class="mc-face top"></div>
-      <div class="mc-face front"></div>
-      <div class="mc-face right"></div>
-    </div>
-  `;
-})();
 
 // ── Window controls ───────────────────────────────────────────────────────
 document.getElementById('btn-min').addEventListener('click',   () => api.minimize());
@@ -267,16 +252,6 @@ document.getElementById('dd-logout').addEventListener('click', doLogout);
 document.getElementById('btn-logout').addEventListener('click', doLogout);
 document.getElementById('settings-logout').addEventListener('click', doLogout);
 
-// ── Init mods list ────────────────────────────────────────────────────────
-(function initMods() {
-  const grid = document.getElementById('mods-grid');
-  for (const mod of MODS) {
-    const card = document.createElement('div');
-    card.className = 'mod-card';
-    card.innerHTML = `<div class="mod-name">${mod.name}</div><div class="mod-ver">${mod.ver}</div>`;
-    grid.appendChild(card);
-  }
-})();
 
 // ── RAM selector (avec sauvegarde persistante) ────────────────────────────
 async function initRam() {
@@ -303,38 +278,6 @@ document.getElementById('btn-discord').addEventListener('click', () => {
   api.openExternal('https://discord.gg/EMhW5VTqsW');
 });
 
-// ── Sync mods ─────────────────────────────────────────────────────────────
-const btnSyncMods    = document.getElementById('btn-sync-mods');
-const btnOpenModsDir = document.getElementById('btn-open-mods-dir');
-const syncResult     = document.getElementById('sync-result');
-
-btnSyncMods.addEventListener('click', async () => {
-  btnSyncMods.disabled = true;
-  btnSyncMods.textContent = '⌛ Synchronisation…';
-  syncResult.className = 'sync-result';
-  syncResult.classList.remove('hidden');
-  syncResult.textContent = 'Synchronisation en cours…';
-
-  try {
-    const result = await api.syncMods();
-    let msg = `✅ ${result.message}\n`;
-    msg += `Total mods : ${result.total}\n`;
-    if (result.added.length)   msg += `➕ Ajoutés / mis à jour : ${result.added.join(', ')}\n`;
-    if (result.removed.length) msg += `➖ Supprimés : ${result.removed.join(', ')}`;
-    if (!result.added.length && !result.removed.length) msg += '📦 Tout est à jour.';
-    syncResult.textContent = msg.trim();
-    syncResult.classList.add('ok');
-  } catch (err) {
-    syncResult.textContent = `❌ Erreur : ${err.message || err}`;
-    syncResult.classList.add('error');
-  } finally {
-    btnSyncMods.disabled = false;
-    btnSyncMods.textContent = '🔄 Synchroniser les mods';
-  }
-});
-
-btnOpenModsDir.addEventListener('click', () => api.openModsDir());
-
 // ── Folder button ─────────────────────────────────────────────────────────
 document.getElementById('btn-folder').addEventListener('click', () => api.openGameDir());
 
@@ -353,6 +296,13 @@ function appendLog(msg) {
   logScroll.appendChild(line);
   logScroll.scrollTop = logScroll.scrollHeight;
 }
+
+// ── Install + launch progress listeners ──────────────────────────────────
+api.onInstallProgress((data) => {
+  progressArea.classList.remove('hidden');
+  progressLabel.textContent = data.message || 'Installation…';
+  progressFill.style.width  = (data.pct || 0) + '%';
+});
 
 api.onLaunchLog((msg) => appendLog(msg));
 
@@ -395,27 +345,69 @@ api.onLaunchError((err) => {
   alert(`Erreur de lancement:\n${err}\n\nVérifie que Java 17+ est installé.`);
 });
 
+// ── Bouton Play/Install ───────────────────────────────────────────────────
+let installState = 'install'; // 'install' | 'update' | 'ready'
+
+async function setInstallMode(state) {
+  installState = state;
+  if (state === 'ready') {
+    playTxt.textContent = '▶ \u00a0Jouer';
+    btnPlay.classList.remove('install-mode');
+    btnPlay.classList.remove('update-mode');
+  } else if (state === 'update') {
+    playTxt.textContent = '🔄 \u00a0Mettre à jour';
+    btnPlay.classList.remove('install-mode');
+    btnPlay.classList.add('update-mode');
+  } else {
+    playTxt.textContent = '⬇ \u00a0Installer';
+    btnPlay.classList.add('install-mode');
+    btnPlay.classList.remove('update-mode');
+  }
+}
+
 btnPlay.addEventListener('click', async () => {
   if (launched) return;
   if (!auth) { alert('Non connecté !'); return; }
 
   btnPlay.disabled = true;
-  playTxt.textContent = '⌛ Préparation…';
   progressArea.classList.remove('hidden');
-  progressLabel.textContent = 'Vérification des fichiers…';
   progressFill.style.width = '0%';
   logScroll.innerHTML = '';
 
-  const forgeInfo = await api.checkForge();
-  if (!forgeInfo.exists) {
-    const msg = `Le fichier Forge est introuvable !\n\nEmplacement attendu :\n${forgeInfo.forgePath}\n\nTélécharge forge-1.20.1-${forgeInfo.forgeVersion}-installer.jar et place-le dans le dossier du launcher.`;
-    alert(msg);
-    btnPlay.disabled = false;
-    playTxt.textContent = '▶ \u00a0Jouer';
+  // ── Mode Installation ou Mise à jour ──────────────────────────────────────
+  if (installState === 'install' || installState === 'update') {
+    playTxt.textContent = installState === 'update' ? '⌛ Mise à jour…' : '⌛ Installation…';
+    progressLabel.textContent = 'Préparation…';
+
+    const result = await api.installAll();
+
+    if (result.errors && result.errors.length > 0) {
+      appendLog(`⚠️ Erreurs: ${result.errors.join(', ')}`);
+    }
+
     progressArea.classList.add('hidden');
+
+    // Re-vérifie l'état après installation
+    const check = await api.checkInstalled();
+    await setInstallMode(check.state);
+
+    if (check.state !== 'ready') {
+      btnPlay.disabled = false;
+      alert('Installation incomplète. Vérifie ta connexion internet et que Java 17+ est installé.');
+      return;
+    }
+
+    btnPlay.disabled = false;
     return;
   }
 
+  // ── Mode Lancement ────────────────────────────────────────────────────────
+  playTxt.textContent = '⌛ Lancement…';
+  progressLabel.textContent = 'Démarrage de Minecraft…';
+  logScroll.innerHTML = '';
+  logArea.classList.remove('hidden');
+
+  progressArea.classList.add('hidden');
   await api.launchGame({ ...auth, ram: ramValue });
 });
 
@@ -425,10 +417,13 @@ btnPlay.addEventListener('click', async () => {
   if (!auth) { await api.logout(); return; }
 
   const initial = auth.name.charAt(0).toUpperCase();
-
-  document.getElementById('profile-avatar').textContent  = initial;
-  document.getElementById('dd-avatar').textContent        = initial;
-  document.getElementById('dd-name').textContent          = auth.name;
-  document.getElementById('play-username').textContent    = `Connecté · ${auth.name}`;
+  document.getElementById('profile-avatar').textContent   = initial;
+  document.getElementById('dd-avatar').textContent         = initial;
+  document.getElementById('dd-name').textContent           = auth.name;
+  document.getElementById('play-username').textContent     = `Connecté · ${auth.name}`;
   document.getElementById('settings-username').textContent = auth.name;
+
+  // Vérifie l'état d'installation pour adapter le bouton
+  const check = await api.checkInstalled();
+  await setInstallMode(check.state);
 })();

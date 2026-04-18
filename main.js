@@ -1,31 +1,47 @@
-const { app, BrowserWindow, ipcMain, session, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
 const { Auth } = require('msmc');
 const path    = require('path');
 const os      = require('os');
 const fs      = require('fs');
 
-// ─── Nom de l'app (barre des tâches, Discord, etc.) ──────────────────────────
+// ─── Nom de l'app ─────────────────────────────────────────────────────────────
 app.setName('ShangriMc');
-if (process.platform === 'win32') {
-  app.setAppUserModelId('ShangriMc Launcher');
-}
+if (process.platform === 'win32') app.setAppUserModelId('ShangriMc Launcher');
 
-// ─── Config ────────────────────────────────────────────────────────────────
-const SERVER_HOST  = 'vocalist-submission.gl.joinmc.link';
-const GAME_DIR     = path.join(os.homedir(), 'AppData', 'Roaming', '.shangrimc');
-const ICON_PATH    = path.join(__dirname, 'assets', 'icon.ico');
+// ─── Config ───────────────────────────────────────────────────────────────────
+const SERVER_HOST = 'vocalist-submission.gl.joinmc.link';
+const GAME_DIR    = path.join(os.homedir(), 'AppData', 'Roaming', '.shangrimc');
+
+// En mode packagé les ressources sont dans process.resourcesPath
+const RES_PATH  = app.isPackaged ? process.resourcesPath : __dirname;
+const ICON_PATH = path.join(RES_PATH, 'assets', 'icon.ico');
 
 // Forge
 const FORGE_VERSION   = '47.4.18';
 const FORGE_JAR_NAME  = `forge-1.20.1-${FORGE_VERSION}-installer.jar`;
-const FORGE_JAR_PATH  = path.join(__dirname, FORGE_JAR_NAME);
+const FORGE_JAR_PATH  = path.join(RES_PATH, FORGE_JAR_NAME);
 const FORGE_CUSTOM_ID = `1.20.1-forge-${FORGE_VERSION}`;
 
-let Store;
-let store;
-let mainWindow;
+// ─── Versioning mods ──────────────────────────────────────────────────────────
+// ⚠️  Pour mettre à jour les mods : change MODS_VERSION + MODS_ZIP_URL
+//     Tous les joueurs re-téléchargeront automatiquement
+const MODS_VERSION = '1.0';
+const MODS_ZIP_URL = 'https://pixeldrain.com/api/file/VLEaoFRT';
 
-// ─── Store ─────────────────────────────────────────────────────────────────
+// Shaders + Texture packs
+const EXTRA_PACKS = [
+  { url: 'https://pixeldrain.com/api/file/vvALxBeR', dir: 'resourcepacks' },
+  { url: 'https://pixeldrain.com/api/file/QVNbsHTA', dir: 'resourcepacks' },
+  { url: 'https://pixeldrain.com/api/file/aZHmLWjH', dir: 'resourcepacks' },
+  { url: 'https://pixeldrain.com/api/file/FHw9ChKu', dir: 'resourcepacks' },
+  { url: 'https://pixeldrain.com/api/file/ZqRdaG55', dir: 'resourcepacks' },
+  { url: 'https://pixeldrain.com/api/file/rZYTPMvx', dir: 'shaderpacks'   },
+  { url: 'https://pixeldrain.com/api/file/NR98mCfV', dir: 'shaderpacks'   },
+];
+
+let Store, store, mainWindow;
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 async function getStore() {
   if (!store) {
     Store = (await import('electron-store')).default;
@@ -34,7 +50,7 @@ async function getStore() {
   return store;
 }
 
-// ─── Fenêtre factory ───────────────────────────────────────────────────────
+// ─── Fenêtre factory ──────────────────────────────────────────────────────────
 function createWindow(file, opts = {}) {
   const win = new BrowserWindow({
     width:           opts.width  || 1100,
@@ -58,7 +74,7 @@ function createWindow(file, opts = {}) {
   return win;
 }
 
-// ─── Auto-update ───────────────────────────────────────────────────────────
+// ─── Auto-update ──────────────────────────────────────────────────────────────
 function setupAutoUpdater() {
   try {
     const { autoUpdater } = require('electron-updater');
@@ -71,8 +87,7 @@ function setupAutoUpdater() {
     autoUpdater.on('update-downloaded', () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         dialog.showMessageBox(mainWindow, {
-          type:    'info',
-          title:   'Mise à jour disponible',
+          type: 'info', title: 'Mise à jour disponible',
           message: 'Une nouvelle version a été téléchargée.\nElle sera installée au prochain redémarrage.',
           buttons: ['Redémarrer maintenant', 'Plus tard'],
         }).then(({ response }) => { if (response === 0) autoUpdater.quitAndInstall(); });
@@ -83,7 +98,7 @@ function setupAutoUpdater() {
   } catch (_) {}
 }
 
-// ─── App ready ─────────────────────────────────────────────────────────────
+// ─── App ready ────────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   setupAutoUpdater();
@@ -98,7 +113,7 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
-// ─── Window controls ───────────────────────────────────────────────────────
+// ─── Window controls ──────────────────────────────────────────────────────────
 ipcMain.on('window-minimize', () => mainWindow?.minimize());
 ipcMain.on('window-maximize', () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize();
@@ -106,20 +121,16 @@ ipcMain.on('window-maximize', () => {
 });
 ipcMain.on('window-close', () => mainWindow?.close());
 
-// ─── Auth: get saved profile ────────────────────────────────────────────────
+// ─── Auth: get saved profile ──────────────────────────────────────────────────
 ipcMain.handle('get-auth', async () => {
   const s = await getStore();
   return s.get('auth') || null;
 });
 
-// ─── Auth Microsoft via msmc ────────────────────────────────────────────────
+// ─── Auth Microsoft via msmc ──────────────────────────────────────────────────
 ipcMain.handle('microsoft-login', async () => {
   try {
     const authManager = new Auth('select_account');
-
-    // On remplace createLink pour utiliser login.microsoftonline.com
-    // (cette page envoie bien le code par email) tout en gardant le
-    // redirect login.live.com/oauth20_desktop.srf que msmc surveille.
     const redirect = authManager.token.redirect;
     authManager.createLink = () =>
       `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize` +
@@ -129,17 +140,13 @@ ipcMain.handle('microsoft-login', async () => {
       `&scope=XboxLive.signin%20offline_access` +
       `&prompt=select_account`;
 
-    // msmc ouvre la popup, capture le code, fait toute la chaîne Xbox + MC
     const xboxManager = await authManager.launch('electron', {
-      width:           480,
-      height:          660,
-      parent:          mainWindow,
-      modal:           true,
+      width: 480, height: 660, parent: mainWindow, modal: true,
       backgroundColor: '#07070f',
+      title: 'Connexion — ShangriMc',
     });
 
     const token = await xboxManager.getMinecraft();
-
     if (!token?.profile?.id) throw new Error('Profil Minecraft introuvable. Minecraft acheté ?');
 
     const profile = {
@@ -154,27 +161,58 @@ ipcMain.handle('microsoft-login', async () => {
     const s = await getStore();
     s.set('auth', profile);
     return profile;
-
   } catch (err) {
     throw new Error(err.message || 'Erreur de connexion Microsoft.');
   }
 });
 
-// ─── Launch Minecraft ──────────────────────────────────────────────────────
+// ─── Détection automatique de Java ───────────────────────────────────────────
+function findJava() {
+  // 1. Variable d'environnement JAVA_HOME
+  if (process.env.JAVA_HOME) {
+    const p = path.join(process.env.JAVA_HOME, 'bin', 'java.exe');
+    if (fs.existsSync(p)) return p;
+  }
+  // 2. Emplacements courants sur Windows
+  const bases = [
+    'C:\\Program Files\\Java',
+    'C:\\Program Files\\Eclipse Adoptium',
+    'C:\\Program Files\\Microsoft',
+    'C:\\Program Files\\Zulu',
+    'C:\\Program Files\\Amazon Corretto',
+  ];
+  for (const base of bases) {
+    if (!fs.existsSync(base)) continue;
+    const dirs = fs.readdirSync(base).filter(d => /jdk|jre/i.test(d)).sort().reverse();
+    for (const dir of dirs) {
+      const p = path.join(base, dir, 'bin', 'java.exe');
+      if (fs.existsSync(p)) return p;
+    }
+  }
+  // 3. Fallback PATH
+  return 'java';
+}
+
+// ─── Launch Minecraft ─────────────────────────────────────────────────────────
 ipcMain.handle('launch-game', async (event, authData) => {
   const { Client } = require('minecraft-launcher-core');
   const client = new Client();
   ensureGameDirStructure();
 
-  const ramMax = authData.ram || '4G';
-  const ramMin = ramMax === '2G' ? '1G' : '2G';
+  const ramMax   = authData.ram || '4G';
+  const ramMin   = ramMax === '2G' ? '1G' : '2G';
+  const javaPath = findJava();
+
+  event.sender.send('launch-log', `[INFO] Java: ${javaPath}`);
+  event.sender.send('launch-log', `[INFO] Forge JAR: ${FORGE_JAR_PATH}`);
+  event.sender.send('launch-log', `[INFO] Game dir: ${GAME_DIR}`);
 
   const opts = {
     authorization: authData.mclc || {
-      access_token:    authData.access_token,
-      client_token:    authData.uuid,
-      uuid:            authData.uuid,
-      name:            authData.name,
+      access_token: authData.access_token,
+      client_token: authData.uuid,
+      uuid:         authData.uuid,
+      name:         authData.name,
       user_properties: '{}',
       meta: { type: 'msa', xuid: authData.uuid, demo: false },
     },
@@ -183,7 +221,7 @@ ipcMain.handle('launch-game', async (event, authData) => {
     forge:   FORGE_JAR_PATH,
     memory:  { max: ramMax, min: ramMin },
     server:  { host: SERVER_HOST, port: 25565 },
-    javaPath: 'java',
+    javaPath,
     customArgs: [
       '-XX:+UseG1GC', '-XX:+ParallelRefProcEnabled',
       '-XX:MaxGCPauseMillis=200', '-XX:+UnlockExperimentalVMOptions',
@@ -205,7 +243,7 @@ ipcMain.handle('launch-game', async (event, authData) => {
   }
 });
 
-// ─── Check Forge ────────────────────────────────────────────────────────────
+// ─── Check Forge ──────────────────────────────────────────────────────────────
 ipcMain.handle('check-forge', async () => ({
   forgePath:    FORGE_JAR_PATH,
   forgeVersion: FORGE_VERSION,
@@ -213,45 +251,161 @@ ipcMain.handle('check-forge', async () => ({
   gameDir:      GAME_DIR,
 }));
 
-// ─── Open URL in browser ────────────────────────────────────────────────────
+// ─── Open URL in browser ──────────────────────────────────────────────────────
 ipcMain.handle('open-external', async (_, url) => shell.openExternal(url));
 
-// ─── Mods manifest (GitHub) ────────────────────────────────────────────────
-const MODS_MANIFEST_URL = 'https://raw.githubusercontent.com/kogareyli/shangrimclauncher/main/mods-manifest.json';
+// ─── Check install state ──────────────────────────────────────────────────────
+// Retourne { state: 'ready' | 'update' | 'install' }
+ipcMain.handle('check-installed', async () => {
+  const s           = await getStore();
+  const savedVer    = s.get('mods_version') || null;
+  const gameModsDir = path.join(GAME_DIR, 'mods');
+  const hasMods     = fs.existsSync(gameModsDir) &&
+    fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar')).length > 0;
 
-ipcMain.handle('check-mods-update', async (event) => {
-  try {
-    const { default: fetch } = await import('node-fetch');
-    const res = await fetch(MODS_MANIFEST_URL, { timeout: 5000 });
-    if (!res.ok) return { upToDate: true, message: 'Manifest non trouvable.' };
-
-    const manifest    = await res.json();
-    const gameModsDir = path.join(GAME_DIR, 'mods');
-    ensureGameDirStructure();
-
-    const localMods = fs.existsSync(gameModsDir)
-      ? fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar'))
-      : [];
-
-    const missing = manifest.mods.filter(m => !localMods.includes(m.name));
-    if (missing.length === 0) return { upToDate: true, total: manifest.mods.length };
-
-    let downloaded = 0;
-    for (const mod of missing) {
-      event.sender.send('mod-download-progress', { name: mod.name, current: downloaded, total: missing.length });
-      const modRes = await fetch(mod.url);
-      if (!modRes.ok) continue;
-      const buffer = await modRes.buffer();
-      fs.writeFileSync(path.join(gameModsDir, mod.name), buffer);
-      downloaded++;
-    }
-    return { upToDate: false, downloaded, total: missing.length };
-  } catch (e) {
-    return { upToDate: true, error: e.message };
-  }
+  if (!hasMods)                  return { state: 'install' };
+  if (savedVer !== MODS_VERSION) return { state: 'update'  };
+  return                                { state: 'ready'   };
 });
 
-// ─── Game directory setup ───────────────────────────────────────────────────
+// ─── Install tout (mods + shaders + textures) ─────────────────────────────────
+ipcMain.handle('install-all', async (event) => {
+  const AdmZip             = require('adm-zip');
+  const { default: fetch } = await import('node-fetch');
+  ensureGameDirStructure();
+
+  const results = { mods: false, packs: 0, errors: [] };
+  const s       = await getStore();
+
+  // ── 1. Mods ──────────────────────────────────────────────────────────────
+  const gameModsDir = path.join(GAME_DIR, 'mods');
+  const savedVer    = s.get('mods_version') || null;
+  const needsUpdate = savedVer !== MODS_VERSION;
+  const localMods   = fs.existsSync(gameModsDir)
+    ? fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar'))
+    : [];
+
+  if (localMods.length === 0 || needsUpdate) {
+    try {
+      // Mise à jour : supprime les anciens mods
+      if (needsUpdate && localMods.length > 0) {
+        event.sender.send('install-progress', { pct: 0, message: 'Suppression des anciens mods…' });
+        for (const f of localMods) {
+          try { fs.unlinkSync(path.join(gameModsDir, f)); } catch (_) {}
+        }
+      }
+
+      event.sender.send('install-progress', { pct: 2, message: 'Téléchargement des mods…' });
+      const res = await fetch(MODS_ZIP_URL, { timeout: 180000 });
+      if (!res.ok) throw new Error(`Mods: ${res.status}`);
+
+      const total  = parseInt(res.headers.get('content-length') || '0', 10);
+      const chunks = []; let received = 0;
+      for await (const chunk of res.body) {
+        chunks.push(chunk); received += chunk.length;
+        const pct = 2 + (total > 0 ? Math.round((received / total) * 28) : 0);
+        event.sender.send('install-progress', {
+          pct, message: `Mods… ${(received / 1024 / 1024).toFixed(1)} Mo`,
+        });
+      }
+      const zip = new AdmZip(Buffer.concat(chunks));
+      zip.getEntries()
+        .filter(e => !e.isDirectory && e.entryName.endsWith('.jar'))
+        .forEach(e => zip.extractEntryTo(e, gameModsDir, false, true));
+      results.mods = true;
+    } catch (e) { results.errors.push(`Mods: ${e.message}`); }
+  } else {
+    results.mods = true;
+  }
+
+  // ── 2. Texture packs + Shaders ───────────────────────────────────────────
+  let packIdx = 0;
+  for (const pack of EXTRA_PACKS) {
+    packIdx++;
+    const destDir = path.join(GAME_DIR, pack.dir);
+    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+    try {
+      const head = await fetch(pack.url, { method: 'HEAD', timeout: 10000 });
+      const cd   = head.headers.get('content-disposition') || '';
+      const nameMatch = cd.match(/filename="?([^";]+)"?/);
+      const filename  = nameMatch ? nameMatch[1] : `pack_${packIdx}.zip`;
+
+      if (fs.existsSync(path.join(destDir, filename))) { results.packs++; continue; }
+
+      const pctBase = 30 + Math.round((packIdx / EXTRA_PACKS.length) * 65);
+      event.sender.send('install-progress', {
+        pct: pctBase,
+        message: `${pack.dir === 'shaderpacks' ? 'Shader' : 'Texture'} ${packIdx}/${EXTRA_PACKS.length}…`,
+      });
+
+      const res = await fetch(pack.url, { timeout: 120000 });
+      if (!res.ok) throw new Error(`Pack ${packIdx}: ${res.status}`);
+      const buf = Buffer.concat(
+        await (async () => { const c = []; for await (const ch of res.body) c.push(ch); return c; })()
+      );
+      fs.writeFileSync(path.join(destDir, filename), buf);
+      results.packs++;
+    } catch (e) { results.errors.push(e.message); }
+  }
+
+  // ── 3. Sauvegarde la version + ajoute le serveur ─────────────────────────
+  if (results.mods) s.set('mods_version', MODS_VERSION);
+  try { writeServersDat(); } catch (_) {}
+
+  event.sender.send('install-progress', { pct: 100, message: '✅ Installation terminée !' });
+  return results;
+});
+
+// ─── Écrit servers.dat (serveur ShangriMc pré-enregistré) ────────────────────
+function writeServersDat() {
+  const serversDat = path.join(GAME_DIR, 'servers.dat');
+
+  function nbtStr(name, value) {
+    const nb = Buffer.from(name,  'utf8');
+    const vb = Buffer.from(value, 'utf8');
+    const buf = Buffer.alloc(1 + 2 + nb.length + 2 + vb.length);
+    let i = 0;
+    buf[i++] = 0x08;
+    buf.writeUInt16BE(nb.length, i); i += 2;
+    nb.copy(buf, i); i += nb.length;
+    buf.writeUInt16BE(vb.length, i); i += 2;
+    vb.copy(buf, i);
+    return buf;
+  }
+
+  function nbtByte(name, value) {
+    const nb = Buffer.from(name, 'utf8');
+    const buf = Buffer.alloc(1 + 2 + nb.length + 1);
+    let i = 0;
+    buf[i++] = 0x01;
+    buf.writeUInt16BE(nb.length, i); i += 2;
+    nb.copy(buf, i); i += nb.length;
+    buf[i] = value & 0xff;
+    return buf;
+  }
+
+  const entry = Buffer.concat([
+    nbtStr('ip',   SERVER_HOST),
+    nbtStr('name', 'ShangriMc'),
+    nbtByte('acceptTextures', 1),
+    Buffer.from([0x00]),
+  ]);
+
+  const listName   = Buffer.from('servers', 'utf8');
+  const listHeader = Buffer.alloc(1 + 2 + listName.length + 1 + 4);
+  let i = 0;
+  listHeader[i++] = 0x09;
+  listHeader.writeUInt16BE(listName.length, i); i += 2;
+  listName.copy(listHeader, i); i += listName.length;
+  listHeader[i++] = 0x0a;
+  listHeader.writeUInt32BE(1, i);
+
+  const root = Buffer.from([0x0a, 0x00, 0x00]);
+  fs.writeFileSync(serversDat, Buffer.concat([root, listHeader, entry, Buffer.from([0x00])]));
+}
+
+// ─── Game directory setup ─────────────────────────────────────────────────────
 function ensureGameDirStructure() {
   for (const d of ['mods', 'config', 'resourcepacks', 'shaderpacks', 'screenshots', 'saves']) {
     const p = path.join(GAME_DIR, d);
@@ -259,45 +413,31 @@ function ensureGameDirStructure() {
   }
 }
 
-// ─── Mod sync launcher/mods/ → .shangrimc/mods/ ────────────────────────────
-ipcMain.handle('sync-mods', async () => {
-  const launcherModsDir = path.join(__dirname, 'mods');
-  const gameModsDir     = path.join(GAME_DIR, 'mods');
-
-  if (!fs.existsSync(launcherModsDir)) {
-    fs.mkdirSync(launcherModsDir, { recursive: true });
-    return { added: [], removed: [], total: 0, message: 'Dossier mods/ créé.' };
-  }
-  ensureGameDirStructure();
-
-  const launcherMods = fs.readdirSync(launcherModsDir).filter(f => f.endsWith('.jar'));
-  const gameMods     = fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar'));
-  const added = [], removed = [];
-
-  for (const mod of launcherMods) {
-    const src = path.join(launcherModsDir, mod);
-    const dst = path.join(gameModsDir, mod);
-    const srcStat = fs.statSync(src);
-    const dstStat = fs.existsSync(dst) ? fs.statSync(dst) : null;
-    if (!dstStat || srcStat.size !== dstStat.size || srcStat.mtimeMs > dstStat.mtimeMs) {
-      fs.copyFileSync(src, dst);
-      added.push(mod);
-    }
-  }
-  for (const mod of gameMods) {
-    if (!launcherMods.includes(mod)) { fs.unlinkSync(path.join(gameModsDir, mod)); removed.push(mod); }
-  }
-  return { added, removed, total: launcherMods.length, message: 'Synchronisation terminée.' };
-});
-
-// ─── Open mods dir ─────────────────────────────────────────────────────────
+// ─── Open mods dir ────────────────────────────────────────────────────────────
 ipcMain.handle('open-mods-dir', async () => {
-  const d = path.join(__dirname, 'mods');
+  const d = path.join(GAME_DIR, 'mods');
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   shell.openPath(d);
 });
 
-// ─── Settings ──────────────────────────────────────────────────────────────
+// ─── List installed mods ──────────────────────────────────────────────────────
+ipcMain.handle('get-installed-mods', async () => {
+  const gameModsDir = path.join(GAME_DIR, 'mods');
+  if (!fs.existsSync(gameModsDir)) return [];
+  return fs.readdirSync(gameModsDir)
+    .filter(f => f.endsWith('.jar'))
+    .map(f => {
+      const name = f
+        .replace(/\.jar$/i, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\s+\d[\d.\-]+.*$/, '')
+        .replace(/\b\w/g, c => c.toUpperCase());
+      return { file: f, name };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+});
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
 ipcMain.handle('get-setting', async (_, key) => {
   const s = await getStore();
   return s.get(`setting.${key}`) || null;
@@ -307,13 +447,13 @@ ipcMain.handle('set-setting', async (_, key, value) => {
   s.set(`setting.${key}`, value);
 });
 
-// ─── Open game dir ─────────────────────────────────────────────────────────
+// ─── Open game dir ────────────────────────────────────────────────────────────
 ipcMain.handle('open-game-dir', async () => {
   if (!fs.existsSync(GAME_DIR)) fs.mkdirSync(GAME_DIR, { recursive: true });
   shell.openPath(GAME_DIR);
 });
 
-// ─── Go Home (login → home redirect) ───────────────────────────────────────
+// ─── Go Home ──────────────────────────────────────────────────────────────────
 ipcMain.handle('go-home', async () => {
   const prevWin = mainWindow;
   mainWindow = createWindow('home.html');
@@ -322,7 +462,7 @@ ipcMain.handle('go-home', async () => {
   });
 });
 
-// ─── Logout ────────────────────────────────────────────────────────────────
+// ─── Logout ───────────────────────────────────────────────────────────────────
 ipcMain.handle('logout', async () => {
   const s = await getStore();
   s.delete('auth');
@@ -331,22 +471,19 @@ ipcMain.handle('logout', async () => {
   if (oldWin && !oldWin.isDestroyed()) oldWin.close();
 });
 
-// ─── Discord RPC (placeholder — set a real App ID at discord.com/developers) ──
+// ─── Discord RPC ──────────────────────────────────────────────────────────────
 ipcMain.handle('start-discord-rpc', async () => {
   try {
     const RPC = require('discord-rpc');
-    const DISCORD_CLIENT_ID = '1234567890123456789'; // ← remplace par ton vrai App ID Discord
     const rpc = new RPC.Client({ transport: 'ipc' });
     rpc.on('ready', () => {
       rpc.setActivity({
-        details:    'Sur le serveur ShangriMc',
-        state:      'Forge 1.20.1',
-        largeImageKey: 'logo',
-        largeImageText: 'ShangriMc',
-        startTimestamp: Date.now(),
-        instance: false,
+        details: 'Sur le serveur ShangriMc',
+        state:   'Forge 1.20.1',
+        largeImageKey: 'logo', largeImageText: 'ShangriMc',
+        startTimestamp: Date.now(), instance: false,
       });
     });
-    await rpc.login({ clientId: DISCORD_CLIENT_ID });
-  } catch (_) { /* discord-rpc non installé ou App ID invalide */ }
+    await rpc.login({ clientId: '1234567890123456789' });
+  } catch (_) {}
 });
