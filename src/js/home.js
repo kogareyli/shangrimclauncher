@@ -381,9 +381,11 @@ btnPlay.addEventListener('click', async () => {
 
     const result = await api.installAll();
 
+    logArea.classList.remove('hidden');
     if (result.errors && result.errors.length > 0) {
-      appendLog(`⚠️ Erreurs: ${result.errors.join(', ')}`);
+      for (const err of result.errors) appendLog(`❌ ${err}`);
     }
+    appendLog(`✅ Mods: ${result.mods} | Packs: ${result.packs}/${result.totalPacks}`);
 
     progressArea.classList.add('hidden');
 
@@ -393,7 +395,10 @@ btnPlay.addEventListener('click', async () => {
 
     if (check.state !== 'ready') {
       btnPlay.disabled = false;
-      alert('Installation incomplète. Vérifie ta connexion internet et que Java 17+ est installé.');
+      const detail = result.errors && result.errors.length > 0
+        ? result.errors.join('\n')
+        : 'Aucun mod trouve apres telechargement.';
+      alert(`Installation incomplete !\n\n${detail}\n\nVerifie ta connexion internet.`);
       return;
     }
 

@@ -7,23 +7,11 @@ echo ===================================================
 echo   ShangriMc Launcher - Publier une mise a jour
 echo ===================================================
 echo.
-echo Ce script va :
-echo   1. Mettre a jour la version dans package.json
-echo   2. Committer tous tes changements
-echo   3. Creer un tag Git et pousser sur GitHub
-echo   4. GitHub Actions build le .exe automatiquement
-echo   5. Les joueurs recoivent la MAJ au prochain lancement
-echo.
 
-REM -- Lit la version actuelle depuis package.json --
-for /f "tokens=2 delims=:, " %%v in ('findstr /c:"\"version\"" package.json') do (
-    set CURRENT_VER=%%~v
-    goto :got_ver
-)
-:got_ver
-set CURRENT_VER=%CURRENT_VER:"=%
+REM -- Lit la version actuelle via Node.js --
+for /f %%v in ('node -e "process.stdout.write(require('./package.json').version)"') do set CURRENT_VER=%%v
 
-echo Version actuelle dans package.json : %CURRENT_VER%
+echo Version actuelle : %CURRENT_VER%
 echo.
 set /p NEW_VER=Nouvelle version (appuie Entree pour garder %CURRENT_VER%) :
 
@@ -41,8 +29,8 @@ if /i not "%CONFIRM%"=="O" (
 
 echo.
 echo [1/5] Mise a jour de la version dans package.json...
-powershell -Command "(Get-Content package.json -Raw) -replace '\"version\": \"%CURRENT_VER%\"', '\"version\": \"%NEW_VER%\"' | Set-Content package.json -Encoding UTF8 -NoNewline"
-echo      OK : %CURRENT_VER% --^> %NEW_VER%
+node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));p.version='%NEW_VER%';fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n','utf8');"
+echo      OK : %CURRENT_VER% -^> %NEW_VER%
 
 echo.
 echo [2/5] Ajout de tous les fichiers modifies...
@@ -60,14 +48,15 @@ echo.
 echo [4/5] Push vers GitHub (branche main)...
 git push origin main
 if errorlevel 1 (
-    echo [ERREUR] Push echoue ! Verifie ta connexion GitHub.
+    echo [ERREUR] Push echoue.
     pause
     exit /b 1
 )
 
 echo.
-echo [5/5] Creation du tag v%NEW_VER% et push...
+echo [5/5] Suppression ancien tag et push du nouveau...
 git tag -d v%NEW_VER% 2>nul
+git push origin --delete v%NEW_VER% 2>nul
 git tag v%NEW_VER%
 git push origin v%NEW_VER%
 if errorlevel 1 (
@@ -81,11 +70,9 @@ echo ===================================================
 echo   OK ! Version v%NEW_VER% envoyee sur GitHub !
 echo ===================================================
 echo.
-echo GitHub Actions est en train de builder le launcher...
-echo Dans ~5 minutes, la release sera disponible ici :
+echo GitHub Actions build le launcher, ~5 minutes...
 echo https://github.com/kogareyli/shangrimclauncher/releases
 echo.
-echo Les joueurs recevront la mise a jour automatiquement
-echo au prochain lancement du launcher !
+echo Les joueurs recevront la MAJ au prochain lancement !
 echo.
 pause

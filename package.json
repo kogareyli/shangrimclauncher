@@ -1,7 +1,7 @@
-﻿{
+{
   "name": "shangrimc-launcher",
   "version": "1.1.0",
-  "description": "ShangriMc Official Launcher â€” Forge 1.20.1",
+  "description": "ShangriMc Official Launcher - Forge 1.20.1",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -11,7 +11,7 @@
   "build": {
     "appId": "com.shangrimc.launcher",
     "productName": "ShangriMc Launcher",
-    "copyright": "Copyright Â© 2025 ShangriMc",
+    "copyright": "Copyright 2025 ShangriMc",
     "publish": {
       "provider": "github",
       "owner": "kogareyli",
@@ -55,6 +55,7 @@
       "buildResources": "assets"
     }
   },
+  "author": "ShangriMc",
   "dependencies": {
     "adm-zip": "^0.5.10",
     "electron-store": "^8.1.0",

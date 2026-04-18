@@ -268,7 +268,7 @@ ipcMain.handle('install-all', async (event) => {
   const { default: fetch } = await import('node-fetch');
   ensureGameDirStructure();
 
-  const results = { mods: false, packs: 0, errors: [] };
+  const results = { mods: false, packs: 0, totalPacks: EXTRA_PACKS.length, errors: [] };
   const s       = await getStore();
 
   // ── 1. Mods ──────────────────────────────────────────────────────────────
@@ -281,17 +281,9 @@ ipcMain.handle('install-all', async (event) => {
 
   if (localMods.length === 0 || needsUpdate) {
     try {
-      // Mise à jour : supprime les anciens mods
-      if (needsUpdate && localMods.length > 0) {
-        event.sender.send('install-progress', { pct: 0, message: 'Suppression des anciens mods…' });
-        for (const f of localMods) {
-          try { fs.unlinkSync(path.join(gameModsDir, f)); } catch (_) {}
-        }
-      }
-
-      event.sender.send('install-progress', { pct: 2, message: 'Téléchargement des mods…' });
+      event.sender.send('install-progress', { pct: 2, message: 'Telechargement des mods…' });
       const res = await fetch(MODS_ZIP_URL, { timeout: 180000 });
-      if (!res.ok) throw new Error(`Mods: ${res.status}`);
+      if (!res.ok) throw new Error(`Pixeldrain HTTP ${res.status} - URL invalide ou fichier supprime`);
 
       const total  = parseInt(res.headers.get('content-length') || '0', 10);
       const chunks = []; let received = 0;
@@ -299,13 +291,24 @@ ipcMain.handle('install-all', async (event) => {
         chunks.push(chunk); received += chunk.length;
         const pct = 2 + (total > 0 ? Math.round((received / total) * 28) : 0);
         event.sender.send('install-progress', {
-          pct, message: `Mods… ${(received / 1024 / 1024).toFixed(1)} Mo`,
+          pct, message: `Mods… ${(received / 1024 / 1024).toFixed(1)} Mo / ${(total / 1024 / 1024).toFixed(1)} Mo`,
         });
       }
-      const zip = new AdmZip(Buffer.concat(chunks));
-      zip.getEntries()
-        .filter(e => !e.isDirectory && e.entryName.endsWith('.jar'))
-        .forEach(e => zip.extractEntryTo(e, gameModsDir, false, true));
+
+      // Telechargement OK → maintenant on supprime les anciens mods
+      if (needsUpdate && localMods.length > 0) {
+        event.sender.send('install-progress', { pct: 30, message: 'Suppression des anciens mods…' });
+        for (const f of localMods) {
+          try { fs.unlinkSync(path.join(gameModsDir, f)); } catch (_) {}
+        }
+      }
+
+      const buf     = Buffer.concat(chunks);
+      const zip     = new AdmZip(buf);
+      const entries = zip.getEntries().filter(e => !e.isDirectory && e.entryName.endsWith('.jar'));
+      if (entries.length === 0) throw new Error(`Le zip ne contient aucun .jar (${(buf.length/1024/1024).toFixed(1)} Mo telechargé)`);
+      entries.forEach(e => zip.extractEntryTo(e, gameModsDir, false, true));
+      event.sender.send('install-progress', { pct: 32, message: `${entries.length} mods extraits !` });
       results.mods = true;
     } catch (e) { results.errors.push(`Mods: ${e.message}`); }
   } else {
