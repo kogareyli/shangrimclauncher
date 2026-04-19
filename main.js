@@ -25,7 +25,7 @@ const FORGE_CUSTOM_ID = `1.20.1-forge-${FORGE_VERSION}`;
 // ─── Versioning mods ──────────────────────────────────────────────────────────
 // ⚠️  Pour mettre à jour les mods : change MODS_VERSION + MODS_ZIP_URL
 //     Tous les joueurs re-téléchargeront automatiquement
-const MODS_VERSION = '1.1';
+const MODS_VERSION = '1.2';
 const MODS_ZIP_URL = 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/shangrimc-mods.zip';
 
 // Shaders + Texture packs

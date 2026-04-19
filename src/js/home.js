@@ -4,6 +4,9 @@ const api = window.shangrimc;
 // ── Mod list ─────────────────────────────────────────────────────────────
 const MODS = [
   { name: 'Aesthetic Windows',         ver: '1.20.1 v2.0.1' },
+  { name: 'Barsita',                   ver: '1.20 1.1.2' },
+  { name: 'Embeddium',                 ver: '0.3.31 1.20.1' },
+  { name: 'Oculus',                    ver: '1.20.1 1.8.0' },
   { name: 'AI Improvements',           ver: '1.20 0.5.2' },
   { name: 'Alcocraft Plus',            ver: '1.20 2.1.0' },
   { name: "Alex's Mobs",               ver: '1.22.9' },
@@ -36,7 +39,7 @@ const MODS = [
   { name: 'Enhanced Boss Bars',        ver: '1.20.1 1.0.0' },
   { name: 'Epic Fight',                ver: '20.14.14 1.20.1' },
   { name: 'Epic PArCool',              ver: '20.12.0.1' },
-  { name: 'Fancy Menu',                ver: '2.14.7' },
+  { name: 'Fancy Menu',                ver: '3.8.1' },
   { name: 'Fantasy Armor',             ver: '1.2.3' },
   { name: 'FerriteCore',               ver: '6.0.1' },
   { name: 'FTB Quests',                ver: '2001.4.18' },
