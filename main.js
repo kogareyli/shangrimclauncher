@@ -236,6 +236,32 @@ ipcMain.handle('launch-game', async (event, authData) => {
   try {
     await client.launch(opts);
     event.sender.send('launch-started');
+
+    // Renomme la fenetre Minecraft en "ShangriMc" via PowerShell
+    const { spawn } = require('child_process');
+    const psScript = `
+$timeout = 120
+$start = Get-Date
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class WinAPI {
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern bool SetWindowText(IntPtr hWnd, string text);
+}
+"@
+while (((Get-Date) - $start).TotalSeconds -lt $timeout) {
+    $procs = Get-Process -Name java -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -ne "" }
+    foreach ($p in $procs) {
+        [WinAPI]::SetWindowText($p.MainWindowHandle, "ShangriMc")
+    }
+    Start-Sleep -Milliseconds 1000
+}
+`;
+    spawn('powershell', ['-Command', psScript], {
+      detached: true, stdio: 'ignore', windowsHide: true
+    }).unref();
+
   } catch (err) {
     event.sender.send('launch-error', err.message);
   }
