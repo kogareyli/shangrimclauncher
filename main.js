@@ -268,6 +268,12 @@ ipcMain.handle('install-all', async (event) => {
   const { default: fetch } = await import('node-fetch');
   ensureGameDirStructure();
 
+  const BROWSER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Referer':    'https://pixeldrain.com/',
+    'Origin':     'https://pixeldrain.com',
+  };
+
   const results = { mods: false, packs: 0, totalPacks: EXTRA_PACKS.length, errors: [] };
   const s       = await getStore();
 
@@ -282,7 +288,7 @@ ipcMain.handle('install-all', async (event) => {
   if (localMods.length === 0 || needsUpdate) {
     try {
       event.sender.send('install-progress', { pct: 2, message: 'Telechargement des mods…' });
-      const res = await fetch(MODS_ZIP_URL, { timeout: 180000 });
+      const res = await fetch(MODS_ZIP_URL, { timeout: 180000, headers: BROWSER_HEADERS });
       if (!res.ok) throw new Error(`Pixeldrain HTTP ${res.status} - URL invalide ou fichier supprime`);
 
       const total  = parseInt(res.headers.get('content-length') || '0', 10);
@@ -323,7 +329,7 @@ ipcMain.handle('install-all', async (event) => {
     if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
 
     try {
-      const head = await fetch(pack.url, { method: 'HEAD', timeout: 10000 });
+      const head = await fetch(pack.url, { method: 'HEAD', timeout: 10000, headers: BROWSER_HEADERS });
       const cd   = head.headers.get('content-disposition') || '';
       const nameMatch = cd.match(/filename="?([^";]+)"?/);
       const filename  = nameMatch ? nameMatch[1] : `pack_${packIdx}.zip`;
@@ -336,7 +342,7 @@ ipcMain.handle('install-all', async (event) => {
         message: `${pack.dir === 'shaderpacks' ? 'Shader' : 'Texture'} ${packIdx}/${EXTRA_PACKS.length}…`,
       });
 
-      const res = await fetch(pack.url, { timeout: 120000 });
+      const res = await fetch(pack.url, { timeout: 120000, headers: BROWSER_HEADERS });
       if (!res.ok) throw new Error(`Pack ${packIdx}: ${res.status}`);
       const buf = Buffer.concat(
         await (async () => { const c = []; for await (const ch of res.body) c.push(ch); return c; })()
