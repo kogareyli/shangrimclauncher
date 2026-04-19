@@ -307,23 +307,20 @@ ipcMain.handle('open-external', async (_, url) => shell.openExternal(url));
 // ─── Check install state ──────────────────────────────────────────────────────
 // Retourne { state: 'ready' | 'update' | 'install' }
 ipcMain.handle('check-installed', async () => {
-  const s           = await getStore();
-  const savedMods   = s.get('mods_version')   || null;
-  const savedConfig = s.get('config_version') || null;
+  const s        = await getStore();
+  const savedVer = s.get('mods_version') || null;
 
   // Vérifie mods
   const gameModsDir = path.join(GAME_DIR, 'mods');
   const hasMods     = fs.existsSync(gameModsDir) &&
     fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar')).length > 0;
 
-  // Vérifie config FancyMenu (layout ShangriMc)
-  const fancyLayout = path.join(GAME_DIR, 'config', 'fancymenu', 'layouts', 'shangrimc_title.txt');
-  const hasConfig   = fs.existsSync(fancyLayout);
+  // Les configs FancyMenu sont gérées séparément (pas via zip download)
+  ensureFancyMenuConfig();
 
-  if (!hasMods)                         return { state: 'install' };
-  if (savedMods   !== MODS_VERSION)     return { state: 'update'  };
-  if (!hasConfig || savedConfig !== CONFIG_VERSION) return { state: 'update' };
-  return                                             { state: 'ready' };
+  if (!hasMods)                  return { state: 'install' };
+  if (savedVer !== MODS_VERSION) return { state: 'update'  };
+  return                                { state: 'ready'   };
 });
 
 // ─── Install tout (mods + shaders + textures) ─────────────────────────────────
@@ -429,11 +426,8 @@ ipcMain.handle('install-all', async (event) => {
     } catch (e) { results.errors.push(e.message); }
   }
 
-  // ── 3. Sauvegarde version mods + configs + serveur ───────────────────────
-  if (results.mods) {
-    s.set('mods_version', MODS_VERSION);
-    s.set('config_version', CONFIG_VERSION);
-  }
+  // ── 3. Sauvegarde version mods + serveur ─────────────────────────────────
+  if (results.mods) s.set('mods_version', MODS_VERSION);
   try { writeServersDat(); } catch (_) {}
 
   event.sender.send('install-progress', { pct: 100, message: '✅ Installation terminée !' });
@@ -496,11 +490,188 @@ function ensureGameDirStructure() {
   }
 }
 
+// ─── FancyMenu : écrit les configs directement (sans download) ────────────────
+// Pour mettre à jour : modifie le contenu des constantes ci-dessous
+// CONFIG_VERSION sert uniquement à forcer la réécriture si le contenu change
+function ensureFancyMenuConfig() {
+  const configDir  = path.join(GAME_DIR, 'config', 'fancymenu');
+  const layoutsDir = path.join(configDir, 'layouts');
+  if (!fs.existsSync(layoutsDir)) fs.mkdirSync(layoutsDir, { recursive: true });
+
+  const LAYOUT_CONTENT = `{
+type = layout-meta
+fancymenu_layout = shangrimc_title
+screen = net.minecraft.client.gui.screens.TitleScreen
+last_edited_time = 1715000000000
+is_enabled = true
+}
+
+{
+type = menu_background
+background_type = color
+color = #000d1a
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_singleplayer_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_multiplayer_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_realms_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_options_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_quit_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_language_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_accessibility_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:forge_titlescreen_mods_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_join
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = -80
+width = 220
+height = 32
+label = Rejoindre
+button_element_executable_block_identifier = exec_shangrimc_btn_join
+[executable_block:exec_shangrimc_btn_join][type:generic] =
+[executables:exec_shangrimc_btn_join] = $prop_brackets_open$$prop_line_break$type = joinserver$prop_line_break$value = vocalist-submission.gl.joinmc.link:25565$prop_line_break$$prop_brackets_close$
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_options
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = -36
+width = 220
+height = 32
+label = Options
+button_element_executable_block_identifier = exec_shangrimc_btn_options
+[executable_block:exec_shangrimc_btn_options][type:generic] =
+[executables:exec_shangrimc_btn_options] = $prop_brackets_open$$prop_line_break$type = opengui$prop_line_break$value = net.minecraft.client.gui.screens.OptionsScreen$prop_line_break$$prop_brackets_close$
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_quit
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = 16
+width = 220
+height = 32
+label = Quitter
+button_element_executable_block_identifier = exec_shangrimc_btn_quit
+[executable_block:exec_shangrimc_btn_quit][type:generic] =
+[executables:exec_shangrimc_btn_quit] = $prop_brackets_open$$prop_line_break$type = quitgame$prop_line_break$$prop_brackets_close$
+}
+`;
+
+  const OPTIONS_CONTENT = `{
+type = general
+play_vanilla_menu_music = false
+}
+
+{
+type = customization
+show_customization_overlay = false
+modpack_mode = true
+advanced_customization_mode = false
+}
+
+{
+type = tutorial
+show_welcome_screen = false
+}
+`;
+
+  // Écrit layout (toujours mis à jour selon CONFIG_VERSION)
+  const layoutFile  = path.join(layoutsDir, 'shangrimc_title.txt');
+  const markerFile  = path.join(configDir, '.launcher_config_version');
+  const savedCfgVer = fs.existsSync(markerFile) ? fs.readFileSync(markerFile, 'utf8').trim() : null;
+
+  if (!fs.existsSync(layoutFile) || savedCfgVer !== CONFIG_VERSION) {
+    fs.writeFileSync(layoutFile, LAYOUT_CONTENT, 'utf8');
+    const optFile = path.join(configDir, 'options.txt');
+    if (!fs.existsSync(optFile)) {  // options: ne pas écraser si le joueur a modifié
+      fs.writeFileSync(optFile, OPTIONS_CONTENT, 'utf8');
+    }
+    fs.writeFileSync(markerFile, CONFIG_VERSION, 'utf8');
+  }
+}
+
 // ─── Open mods dir ────────────────────────────────────────────────────────────
 ipcMain.handle('open-mods-dir', async () => {
   const d = path.join(GAME_DIR, 'mods');
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   shell.openPath(d);
+});
+
+// ─── Sync mods (copie depuis <launcher>/mods/ → .shangrimc/mods/) ─────────────
+ipcMain.handle('sync-mods', async () => {
+  // Dossier source : mods/ à côté du launcher (ou dans resourcesPath si packagé)
+  const srcDir  = path.join(RES_PATH, 'mods');
+  const destDir = path.join(GAME_DIR, 'mods');
+  if (!fs.existsSync(srcDir)) return { copied: 0 };
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+  const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.jar'));
+  let copied = 0;
+  for (const f of files) {
+    const dest = path.join(destDir, f);
+    if (!fs.existsSync(dest)) {
+      fs.copyFileSync(path.join(srcDir, f), dest);
+      copied++;
+    }
+  }
+  return { copied };
 });
 
 // ─── List installed mods ──────────────────────────────────────────────────────

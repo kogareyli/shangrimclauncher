@@ -456,3 +456,32 @@ document.getElementById('btn-restart-update').addEventListener('click', () => {
 });
 
 document.getElementById('btn-close-banner').addEventListener('click', hideBanner);
+
+// ── Settings: Dossier mods ────────────────────────────────────────────────
+document.getElementById('btn-open-mods-dir').addEventListener('click', () => {
+  api.openModsDir();
+});
+
+// ── Settings: Synchroniser les mods ──────────────────────────────────────
+document.getElementById('btn-sync-mods').addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-sync-mods');
+  const result = document.getElementById('sync-result');
+  btn.disabled = true;
+  result.classList.remove('hidden');
+  result.textContent = '⌛ Synchronisation…';
+  result.style.color = '#93c5fd';
+  try {
+    const res = await api.syncMods();
+    if (res.copied === 0) {
+      result.textContent = 'ℹ️ Aucun mod à synchroniser (dossier mods/ vide ou inexistant).';
+      result.style.color = '#94a3b8';
+    } else {
+      result.textContent = `✅ ${res.copied} mod(s) copié(s) vers .shangrimc/mods/`;
+      result.style.color = '#4ade80';
+    }
+  } catch (e) {
+    result.textContent = `❌ Erreur: ${e.message}`;
+    result.style.color = '#f87171';
+  }
+  btn.disabled = false;
+});

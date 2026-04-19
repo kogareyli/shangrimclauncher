@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('shangrimc', {
   checkInstalled:   ()  => ipcRenderer.invoke('check-installed'),
   getInstalledMods: ()  => ipcRenderer.invoke('get-installed-mods'),
   openModsDir:      ()  => ipcRenderer.invoke('open-mods-dir'),
+  syncMods:         ()  => ipcRenderer.invoke('sync-mods'),
   onInstallProgress: (cb) => ipcRenderer.on('install-progress', (_, v) => cb(v)),
 
   // Discord RPC

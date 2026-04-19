@@ -1,6 +1,6 @@
 {
   "name": "shangrimc-launcher",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "ShangriMc Official Launcher - Forge 1.20.1",
   "main": "main.js",
   "scripts": {
