@@ -22,11 +22,13 @@ const FORGE_JAR_NAME  = `forge-1.20.1-${FORGE_VERSION}-installer.jar`;
 const FORGE_JAR_PATH  = path.join(RES_PATH, FORGE_JAR_NAME);
 const FORGE_CUSTOM_ID = `1.20.1-forge-${FORGE_VERSION}`;
 
-// ─── Versioning mods ──────────────────────────────────────────────────────────
-// ⚠️  Pour mettre à jour les mods : change MODS_VERSION + MODS_ZIP_URL
+// ─── Versioning mods + configs ────────────────────────────────────────────────
+// ⚠️  Pour mettre à jour les mods    : change MODS_VERSION
+//     Pour mettre à jour les configs : change CONFIG_VERSION
 //     Tous les joueurs re-téléchargeront automatiquement
-const MODS_VERSION = '1.3';
-const MODS_ZIP_URL = 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/shangrimc-mods.zip';
+const MODS_VERSION   = '1.4';
+const CONFIG_VERSION = '1.0';
+const MODS_ZIP_URL   = 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/shangrimc-mods.zip';
 
 // Shaders + Texture packs
 const EXTRA_PACKS = [
@@ -107,10 +109,13 @@ async function checkUpdateFallback() {
       { headers: { 'User-Agent': 'ShangriMc-Launcher' }, timeout: 8000 }
     );
     if (!res.ok) return;
-    const data       = await res.json();
-    const latest     = data.tag_name?.replace(/^v/, '');
-    const installed  = app.getVersion();
-    if (latest && latest !== installed) {
+    const data     = await res.json();
+    const tagName  = data.tag_name || '';
+    const latest   = tagName.replace(/^v/, '');
+    // Ignore les tags non-version (ex: mods-latest, vmods-latest)
+    if (!/^\d+\.\d+/.test(latest)) return;
+    const installed = app.getVersion();
+    if (latest !== installed) {
       mainWindow?.webContents.send('update-available', latest);
     }
   } catch (_) {}
@@ -302,17 +307,23 @@ ipcMain.handle('open-external', async (_, url) => shell.openExternal(url));
 // ─── Check install state ──────────────────────────────────────────────────────
 // Retourne { state: 'ready' | 'update' | 'install' }
 ipcMain.handle('check-installed', async () => {
-  const s        = await getStore();
-  const savedVer = s.get('mods_version') || null;
+  const s           = await getStore();
+  const savedMods   = s.get('mods_version')   || null;
+  const savedConfig = s.get('config_version') || null;
 
-  // Verifie uniquement les mods (les packs/shaders s'installent une fois, pas reverifie)
+  // Vérifie mods
   const gameModsDir = path.join(GAME_DIR, 'mods');
   const hasMods     = fs.existsSync(gameModsDir) &&
     fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar')).length > 0;
 
-  if (!hasMods)                  return { state: 'install' };
-  if (savedVer !== MODS_VERSION) return { state: 'update'  };
-  return                                { state: 'ready'   };
+  // Vérifie config FancyMenu (layout ShangriMc)
+  const fancyLayout = path.join(GAME_DIR, 'config', 'fancymenu', 'layouts', 'shangrimc_title.txt');
+  const hasConfig   = fs.existsSync(fancyLayout);
+
+  if (!hasMods)                         return { state: 'install' };
+  if (savedMods   !== MODS_VERSION)     return { state: 'update'  };
+  if (!hasConfig || savedConfig !== CONFIG_VERSION) return { state: 'update' };
+  return                                             { state: 'ready' };
 });
 
 // ─── Install tout (mods + shaders + textures) ─────────────────────────────────
@@ -418,8 +429,11 @@ ipcMain.handle('install-all', async (event) => {
     } catch (e) { results.errors.push(e.message); }
   }
 
-  // ── 3. Sauvegarde version mods + serveur ─────────────────────────────────
-  if (results.mods) s.set('mods_version', MODS_VERSION);
+  // ── 3. Sauvegarde version mods + configs + serveur ───────────────────────
+  if (results.mods) {
+    s.set('mods_version', MODS_VERSION);
+    s.set('config_version', CONFIG_VERSION);
+  }
   try { writeServersDat(); } catch (_) {}
 
   event.sender.send('install-progress', { pct: 100, message: '✅ Installation terminée !' });

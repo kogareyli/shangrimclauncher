@@ -422,22 +422,37 @@ btnPlay.addEventListener('click', async () => {
 })();
 
 // ── Bannière de mise à jour launcher ─────────────────────────────────────
+let _updateBannerTimer = null;
+
+function hideBanner() {
+  document.getElementById('update-banner').classList.add('hidden');
+  if (_updateBannerTimer) { clearTimeout(_updateBannerTimer); _updateBannerTimer = null; }
+}
+
 api.onUpdateAvailable((version) => {
   const banner = document.getElementById('update-banner');
   const text   = document.getElementById('update-banner-text');
   const btn    = document.getElementById('btn-restart-update');
-  text.textContent    = `🔄 Mise à jour v${version} disponible — téléchargement en cours…`;
-  btn.style.display   = 'none';
+  text.textContent  = `🔄 Mise à jour v${version} disponible — téléchargement en cours…`;
+  btn.style.display = 'none';
   banner.classList.remove('hidden');
+  // Auto-cache après 60s si update-downloaded n'a pas encore fire
+  _updateBannerTimer = setTimeout(() => {
+    if (btn.style.display === 'none') hideBanner(); // pas encore prête → on cache
+  }, 60000);
 });
 
 api.onUpdateDownloaded(() => {
   const text = document.getElementById('update-banner-text');
   const btn  = document.getElementById('btn-restart-update');
+  if (_updateBannerTimer) { clearTimeout(_updateBannerTimer); _updateBannerTimer = null; }
   text.textContent  = '✅ Mise à jour prête — clique sur Redémarrer pour l\'installer';
-  btn.style.display = '';
+  btn.style.display = 'inline-block';
+  document.getElementById('update-banner').classList.remove('hidden');
 });
 
 document.getElementById('btn-restart-update').addEventListener('click', () => {
   api.restartAndUpdate();
 });
+
+document.getElementById('btn-close-banner').addEventListener('click', hideBanner);

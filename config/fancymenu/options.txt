@@ -1,0 +1,16 @@
+{
+type = general
+play_vanilla_menu_music = false
+}
+
+{
+type = customization
+show_customization_overlay = false
+modpack_mode = true
+advanced_customization_mode = false
+}
+
+{
+type = tutorial
+show_welcome_screen = false
+}
