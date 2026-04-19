@@ -323,7 +323,7 @@ api.onLaunchStarted(() => {
   btnPlay.classList.add('launched');
   btnPlay.disabled = false;
   progressArea.classList.add('hidden');
-  logArea.classList.remove('hidden');
+  // log masquee — les joueurs n'ont pas besoin de voir ca
 });
 
 api.onLaunchClosed((code) => {
@@ -410,7 +410,6 @@ btnPlay.addEventListener('click', async () => {
   playTxt.textContent = '⌛ Lancement…';
   progressLabel.textContent = 'Démarrage de Minecraft…';
   logScroll.innerHTML = '';
-  logArea.classList.remove('hidden');
 
   progressArea.classList.add('hidden');
   await api.launchGame({ ...auth, ram: ramValue });

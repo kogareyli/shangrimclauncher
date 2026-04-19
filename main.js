@@ -222,6 +222,7 @@ ipcMain.handle('launch-game', async (event, authData) => {
       '-XX:+DisableExplicitGC', '-XX:G1NewSizePercent=30',
       '-XX:G1MaxNewSizePercent=40', '-XX:G1HeapRegionSize=8M',
     ],
+    window: { title: 'ShangriMc' },
   };
 
   client.on('debug',    (e) => event.sender.send('launch-log',      `[DEBUG] ${e}`));
