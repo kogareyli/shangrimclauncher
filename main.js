@@ -81,15 +81,18 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload         = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger               = null;
-    autoUpdater.on('update-available', (info) => {
+    autoUpdater.on('checking-for-update',  () => { mainWindow?.webContents.send('launch-log', '[UPDATE] Recherche de mises a jour...'); });
+    autoUpdater.on('update-available',     (info) => {
+      mainWindow?.webContents.send('launch-log', `[UPDATE] Mise a jour disponible: v${info.version}`);
       mainWindow?.webContents.send('update-available', info.version);
     });
-    autoUpdater.on('update-downloaded', () => {
-      mainWindow?.webContents.send('update-downloaded');
-    });
-    autoUpdater.on('error', () => {});
-    if (app.isPackaged) setTimeout(() => autoUpdater.checkForUpdates(), 3000);
-  } catch (_) {}
+    autoUpdater.on('update-not-available', () => { mainWindow?.webContents.send('launch-log', '[UPDATE] Pas de mise a jour.'); });
+    autoUpdater.on('update-downloaded',    () => { mainWindow?.webContents.send('update-downloaded'); });
+    autoUpdater.on('error', (err) => { mainWindow?.webContents.send('launch-log', `[UPDATE ERROR] ${err.message}`); });
+    setTimeout(() => autoUpdater.checkForUpdates(), 3000);
+  } catch (e) {
+    mainWindow?.webContents.send('launch-log', `[UPDATE INIT ERROR] ${e.message}`);
+  }
 }
 
 // ─── App ready ────────────────────────────────────────────────────────────────
