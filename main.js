@@ -76,23 +76,44 @@ function createWindow(file, opts = {}) {
 
 // ─── Auto-update ──────────────────────────────────────────────────────────────
 function setupAutoUpdater() {
+  // ── electron-updater (téléchargement + install auto) ──────────────────────
   try {
     const { autoUpdater } = require('electron-updater');
     autoUpdater.autoDownload         = true;
     autoUpdater.autoInstallOnAppQuit = true;
     autoUpdater.logger               = null;
-    autoUpdater.on('checking-for-update',  () => { mainWindow?.webContents.send('launch-log', '[UPDATE] Recherche de mises a jour...'); });
-    autoUpdater.on('update-available',     (info) => {
-      mainWindow?.webContents.send('launch-log', `[UPDATE] Mise a jour disponible: v${info.version}`);
+    autoUpdater.on('update-available',  (info) => {
       mainWindow?.webContents.send('update-available', info.version);
     });
-    autoUpdater.on('update-not-available', () => { mainWindow?.webContents.send('launch-log', '[UPDATE] Pas de mise a jour.'); });
-    autoUpdater.on('update-downloaded',    () => { mainWindow?.webContents.send('update-downloaded'); });
-    autoUpdater.on('error', (err) => { mainWindow?.webContents.send('launch-log', `[UPDATE ERROR] ${err.message}`); });
+    autoUpdater.on('update-downloaded', () => {
+      mainWindow?.webContents.send('update-downloaded');
+    });
+    autoUpdater.on('error', () => {
+      // Fallback: check GitHub API manuellement
+      checkUpdateFallback();
+    });
     setTimeout(() => autoUpdater.checkForUpdates(), 3000);
-  } catch (e) {
-    mainWindow?.webContents.send('launch-log', `[UPDATE INIT ERROR] ${e.message}`);
+  } catch (_) {
+    setTimeout(checkUpdateFallback, 3000);
   }
+}
+
+// ─── Fallback: vérifie GitHub API si electron-updater plante ─────────────────
+async function checkUpdateFallback() {
+  try {
+    const { default: fetch } = await import('node-fetch');
+    const res  = await fetch(
+      'https://api.github.com/repos/kogareyli/shangrimclauncher/releases/latest',
+      { headers: { 'User-Agent': 'ShangriMc-Launcher' }, timeout: 8000 }
+    );
+    if (!res.ok) return;
+    const data       = await res.json();
+    const latest     = data.tag_name?.replace(/^v/, '');
+    const installed  = app.getVersion();
+    if (latest && latest !== installed) {
+      mainWindow?.webContents.send('update-available', latest);
+    }
+  } catch (_) {}
 }
 
 // ─── App ready ────────────────────────────────────────────────────────────────
@@ -281,8 +302,10 @@ ipcMain.handle('open-external', async (_, url) => shell.openExternal(url));
 // ─── Check install state ──────────────────────────────────────────────────────
 // Retourne { state: 'ready' | 'update' | 'install' }
 ipcMain.handle('check-installed', async () => {
-  const s           = await getStore();
-  const savedVer    = s.get('mods_version') || null;
+  const s        = await getStore();
+  const savedVer = s.get('mods_version') || null;
+
+  // Verifie uniquement les mods (les packs/shaders s'installent une fois, pas reverifie)
   const gameModsDir = path.join(GAME_DIR, 'mods');
   const hasMods     = fs.existsSync(gameModsDir) &&
     fs.readdirSync(gameModsDir).filter(f => f.endsWith('.jar')).length > 0;
@@ -351,7 +374,7 @@ ipcMain.handle('install-all', async (event) => {
     results.mods = true;
   }
 
-  // ── 2. Texture packs + Shaders ───────────────────────────────────────────
+  // ── 2. Texture packs + Shaders (installe une seule fois, pas reverifie) ──
   let packIdx = 0;
   for (const pack of EXTRA_PACKS) {
     packIdx++;
@@ -382,7 +405,7 @@ ipcMain.handle('install-all', async (event) => {
     } catch (e) { results.errors.push(e.message); }
   }
 
-  // ── 3. Sauvegarde la version + ajoute le serveur ─────────────────────────
+  // ── 3. Sauvegarde version mods + serveur ─────────────────────────────────
   if (results.mods) s.set('mods_version', MODS_VERSION);
   try { writeServersDat(); } catch (_) {}
 
