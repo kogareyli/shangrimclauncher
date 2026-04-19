@@ -1,0 +1,114 @@
+{
+type = layout-meta
+fancymenu_layout = shangrimc_title
+screen = net.minecraft.client.gui.screens.TitleScreen
+last_edited_time = 1715000000000
+is_enabled = true
+}
+
+{
+type = menu_background
+background_type = color
+color = #000d1a
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_singleplayer_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_multiplayer_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_realms_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_options_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_quit_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_language_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:mc_titlescreen_accessibility_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = vanilla_button
+instance_identifier = vanillabtn:forge_titlescreen_mods_button
+is_hidden = true
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_join
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = -80
+width = 220
+height = 32
+label = Rejoindre
+button_element_executable_block_identifier = exec_shangrimc_btn_join
+[executable_block:exec_shangrimc_btn_join][type:generic] =
+[executables:exec_shangrimc_btn_join] = $prop_brackets_open$$prop_line_break$type = joinserver$prop_line_break$value = vocalist-submission.gl.joinmc.link:25565$prop_line_break$$prop_brackets_close$
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_options
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = -36
+width = 220
+height = 32
+label = Options
+button_element_executable_block_identifier = exec_shangrimc_btn_options
+[executable_block:exec_shangrimc_btn_options][type:generic] =
+[executables:exec_shangrimc_btn_options] = $prop_brackets_open$$prop_line_break$type = opengui$prop_line_break$value = net.minecraft.client.gui.screens.OptionsScreen$prop_line_break$$prop_brackets_close$
+}
+
+{
+type = element
+element_type = custom_button
+instance_identifier = shangrimc_btn_quit
+anchor_point = MID_RIGHT
+posOffsetX = -300
+posOffsetY = 16
+width = 220
+height = 32
+label = Quitter
+button_element_executable_block_identifier = exec_shangrimc_btn_quit
+[executable_block:exec_shangrimc_btn_quit][type:generic] =
+[executables:exec_shangrimc_btn_quit] = $prop_brackets_open$$prop_line_break$type = quitgame$prop_line_break$$prop_brackets_close$
+}

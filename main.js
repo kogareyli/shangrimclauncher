@@ -25,7 +25,7 @@ const FORGE_CUSTOM_ID = `1.20.1-forge-${FORGE_VERSION}`;
 // ─── Versioning mods ──────────────────────────────────────────────────────────
 // ⚠️  Pour mettre à jour les mods : change MODS_VERSION + MODS_ZIP_URL
 //     Tous les joueurs re-téléchargeront automatiquement
-const MODS_VERSION = '1.2';
+const MODS_VERSION = '1.3';
 const MODS_ZIP_URL = 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/shangrimc-mods.zip';
 
 // Shaders + Texture packs
@@ -367,6 +367,19 @@ ipcMain.handle('install-all', async (event) => {
       const entries = zip.getEntries().filter(e => !e.isDirectory && e.entryName.endsWith('.jar'));
       if (entries.length === 0) throw new Error(`Le zip ne contient aucun .jar (${(buf.length/1024/1024).toFixed(1)} Mo telechargé)`);
       entries.forEach(e => zip.extractEntryTo(e, gameModsDir, false, true));
+
+      // Extraire config/ (FancyMenu layouts, etc.) si present dans le zip
+      const configEntries = zip.getEntries().filter(e => !e.isDirectory && e.entryName.startsWith('config/'));
+      for (const e of configEntries) {
+        const destPath = path.join(GAME_DIR, e.entryName);
+        const destDir  = path.dirname(destPath);
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        fs.writeFileSync(destPath, e.getData());
+      }
+      if (configEntries.length > 0) {
+        event.sender.send('install-progress', { pct: 32, message: `Configs installes (${configEntries.length} fichiers)` });
+      }
+
       event.sender.send('install-progress', { pct: 32, message: `${entries.length} mods extraits !` });
       results.mods = true;
     } catch (e) { results.errors.push(`Mods: ${e.message}`); }

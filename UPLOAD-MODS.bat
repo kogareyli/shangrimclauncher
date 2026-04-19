@@ -12,12 +12,34 @@ set /p TOKEN=Token GitHub (ghp_...) :
 if "!TOKEN!"=="" ( echo Token vide. & pause & exit /b 1 )
 
 echo.
-echo [1/3] Creation de mods.zip depuis .minecraft\mods...
+echo [1/3] Creation de mods.zip (mods + config FancyMenu)...
 set MODSDIR=C:\Users\atomi\AppData\Roaming\.minecraft\mods
+set CONFIGSRC=%~dp0config
 set MODSZIP=%TEMP%\shangrimc-mods.zip
 
 if exist "!MODSZIP!" del "!MODSZIP!"
-powershell -Command "Compress-Archive -Path '!MODSDIR!\*' -DestinationPath '!MODSZIP!' -Force"
+
+REM Cree un dossier temporaire avec la structure mods + config
+set TMPDIR=%TEMP%\shangrimc_build
+if exist "!TMPDIR!" rmdir /s /q "!TMPDIR!"
+mkdir "!TMPDIR!"
+
+REM Copie les mods dans le dossier temporaire (a la racine du zip)
+xcopy /q /y "!MODSDIR!\*.jar" "!TMPDIR!\" >nul
+if errorlevel 1 ( echo [ERREUR] Impossible de copier les mods. & pause & exit /b 1 )
+
+REM Copie le dossier config (layouts FancyMenu) dans le dossier temporaire
+if exist "!CONFIGSRC!" (
+    xcopy /q /y /e /i "!CONFIGSRC!" "!TMPDIR!\config\" >nul
+    echo      Layouts FancyMenu inclus dans le zip
+) else (
+    echo      [AVERTISSEMENT] Dossier config non trouve, layouts FancyMenu non inclus
+)
+
+REM Cree le zip depuis le dossier temporaire
+powershell -Command "Compress-Archive -Path '!TMPDIR!\*' -DestinationPath '!MODSZIP!' -Force"
+rmdir /s /q "!TMPDIR!"
+
 if not exist "!MODSZIP!" (
     echo [ERREUR] Impossible de creer mods.zip
     pause

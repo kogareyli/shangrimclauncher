@@ -290,15 +290,7 @@ const playTxt      = document.getElementById('play-btn-text');
 const progressArea = document.getElementById('progress-area');
 const progressFill = document.getElementById('progress-fill');
 const progressLabel= document.getElementById('progress-label');
-const logArea      = document.getElementById('log-area');
-const logScroll    = document.getElementById('log-scroll');
-
-function appendLog(msg) {
-  const line = document.createElement('div');
-  line.textContent = msg;
-  logScroll.appendChild(line);
-  logScroll.scrollTop = logScroll.scrollHeight;
-}
+function appendLog(msg) { /* logs desactives */ }
 
 // ── Install + launch progress listeners ──────────────────────────────────
 api.onInstallProgress((data) => {
@@ -307,7 +299,7 @@ api.onInstallProgress((data) => {
   progressFill.style.width  = (data.pct || 0) + '%';
 });
 
-api.onLaunchLog((msg) => appendLog(msg));
+api.onLaunchLog(() => {});
 
 api.onLaunchProgress((prog) => {
   progressArea.classList.remove('hidden');
@@ -334,7 +326,7 @@ api.onLaunchClosed((code) => {
   playTxt.textContent = '▶ \u00a0Jouer';
   btnPlay.classList.remove('launched');
   btnPlay.disabled = false;
-  appendLog(`Jeu fermé (code: ${code})`);
+  console.log(`Jeu fermé (code: ${code})`);
 });
 
 api.onLaunchError((err) => {
@@ -343,8 +335,6 @@ api.onLaunchError((err) => {
   btnPlay.classList.remove('launched');
   btnPlay.disabled = false;
   progressArea.classList.add('hidden');
-  appendLog(`❌ Erreur: ${err}`);
-  logArea.classList.remove('hidden');
   alert(`Erreur de lancement:\n${err}\n\nVérifie que Java 17+ est installé.`);
 });
 
@@ -375,7 +365,6 @@ btnPlay.addEventListener('click', async () => {
   btnPlay.disabled = true;
   progressArea.classList.remove('hidden');
   progressFill.style.width = '0%';
-  logScroll.innerHTML = '';
 
   // ── Mode Installation ou Mise à jour ──────────────────────────────────────
   if (installState === 'install' || installState === 'update') {
@@ -384,11 +373,9 @@ btnPlay.addEventListener('click', async () => {
 
     const result = await api.installAll();
 
-    logArea.classList.remove('hidden');
     if (result.errors && result.errors.length > 0) {
-      for (const err of result.errors) appendLog(`❌ ${err}`);
+      console.error('Install errors:', result.errors);
     }
-    appendLog(`✅ Mods: ${result.mods} | Packs: ${result.packs}/${result.totalPacks}`);
 
     progressArea.classList.add('hidden');
 
@@ -412,7 +399,6 @@ btnPlay.addEventListener('click', async () => {
   // ── Mode Lancement ────────────────────────────────────────────────────────
   playTxt.textContent = '⌛ Lancement…';
   progressLabel.textContent = 'Démarrage de Minecraft…';
-  logScroll.innerHTML = '';
 
   progressArea.classList.add('hidden');
   await api.launchGame({ ...auth, ram: ramValue });
