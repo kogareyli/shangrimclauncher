@@ -25,18 +25,18 @@ const FORGE_CUSTOM_ID = `1.20.1-forge-${FORGE_VERSION}`;
 // ─── Versioning mods ──────────────────────────────────────────────────────────
 // ⚠️  Pour mettre à jour les mods : change MODS_VERSION + MODS_ZIP_URL
 //     Tous les joueurs re-téléchargeront automatiquement
-const MODS_VERSION = '1.0';
-const MODS_ZIP_URL = 'https://pixeldrain.com/api/file/VLEaoFRT';
+const MODS_VERSION = '1.1';
+const MODS_ZIP_URL = 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/shangrimc-mods.zip';
 
 // Shaders + Texture packs
 const EXTRA_PACKS = [
-  { url: 'https://pixeldrain.com/api/file/vvALxBeR', dir: 'resourcepacks' },
-  { url: 'https://pixeldrain.com/api/file/QVNbsHTA', dir: 'resourcepacks' },
-  { url: 'https://pixeldrain.com/api/file/aZHmLWjH', dir: 'resourcepacks' },
-  { url: 'https://pixeldrain.com/api/file/FHw9ChKu', dir: 'resourcepacks' },
-  { url: 'https://pixeldrain.com/api/file/ZqRdaG55', dir: 'resourcepacks' },
-  { url: 'https://pixeldrain.com/api/file/rZYTPMvx', dir: 'shaderpacks'   },
-  { url: 'https://pixeldrain.com/api/file/NR98mCfV', dir: 'shaderpacks'   },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/DetailedAnimationsReworked%20-%20V1.15.zip', dir: 'resourcepacks' },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/Enhanced%20Audio%20r6.zip',                  dir: 'resourcepacks' },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/Fresh%20Skeleton%20Physics.zip',             dir: 'resourcepacks' },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/Nature%20X%20-%2012.2%20%5B1.20.1%5D.zip',  dir: 'resourcepacks' },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/Nautilus3D_V1.9_%5BMC-1.13%2B%5D.zip',      dir: 'resourcepacks' },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/BSL_v8.4.zip',                               dir: 'shaderpacks'   },
+  { url: 'https://github.com/kogareyli/shangrimclauncher/releases/download/mods-latest/ComplementaryReimagined_r5.7.1.zip',         dir: 'shaderpacks'   },
 ];
 
 let Store, store, mainWindow;
